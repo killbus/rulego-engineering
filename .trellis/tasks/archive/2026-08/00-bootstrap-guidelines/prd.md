@@ -100,27 +100,27 @@ one project's task history.
 
 ## Acceptance criteria
 
-- [ ] AC1: Starting from `AGENTS.md` or `README.md`, a new session reaches the
+- [x] AC1: Starting from `AGENTS.md` or `README.md`, a new session reaches the
       RuleGo engineering entry guide and every specialized guide through valid
       relative links.
-- [ ] AC2: The ownership guide names each current source of truth and clearly
+- [x] AC2: The ownership guide names each current source of truth and clearly
       distinguishes stable practice from volatile project/runtime facts.
-- [ ] AC3: The capability guide gives a testable graph/plugin/service/consumer
+- [x] AC3: The capability guide gives a testable graph/plugin/service/consumer
       placement method and configuration/message/state boundaries.
-- [ ] AC4: The Plugin ABI guide covers the full immutable build, verification,
+- [x] AC4: The Plugin ABI guide covers the full immutable build, verification,
       coexistence, release, and install evidence chain.
-- [ ] AC5: The runtime guide covers rule deployment/read-back and scoped
+- [x] AC5: The runtime guide covers rule deployment/read-back and scoped
       end-to-end validation, including bounded seekable-media evidence.
-- [ ] AC6: The delivery guide records the established goal, agent, retry,
+- [x] AC6: The delivery guide records the established goal, agent, retry,
       review, commit, CI, and completion practices without mandating them for
       trivial work.
-- [ ] AC7: Normative content contains no copied task history, credentials,
+- [x] AC7: Normative content contains no copied task history, credentials,
       current ABI constants, unresolved placeholders, or unrelated project
       concepts.
-- [ ] AC7a: Root ignore rules exclude `./tmp` and Python cache files, and no
+- [x] AC7a: Root ignore rules exclude `./tmp` and Python cache files, and no
       temporary artifact is staged.
-- [ ] AC8: The dependency-free validator passes locally and in GitHub Actions.
-- [ ] AC9: The final Git commit contains one coherent positive bootstrap and
+- [x] AC8: The dependency-free validator passes locally and in GitHub Actions.
+- [x] AC9: The final Git commit contains one coherent positive bootstrap and
       the remote delivered state, when authorized, matches it.
 
 ## Out of scope

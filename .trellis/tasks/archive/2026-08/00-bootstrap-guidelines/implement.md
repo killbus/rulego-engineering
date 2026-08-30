@@ -40,3 +40,18 @@ Expected changes are limited to root entry documentation and ignore rules,
 RuleGo Trellis guides and layer indexes, the generated irrelevant placeholder
 guides, one validator, one CI workflow, and this Bootstrap task's records. No
 sibling RuleGo repository or deployed service is modified.
+
+## Completion evidence
+
+- Work commit: `d5a161607df600ba8d52f09fd4797dcc59fb8322`.
+- Remote `main` was read back at the same commit.
+- GitHub Actions run
+  [33304982027](https://github.com/killbus/rulego-engineering/actions/runs/33304982027)
+  completed successfully for that commit; its `documentation` job checked out
+  the exact SHA and ran `python3 scripts/validate.py`, validating all 13 owned
+  documentation files.
+- Local completion checks passed: `python3 scripts/validate.py`,
+  `python3 ./.trellis/scripts/task.py validate 00-bootstrap-guidelines`, and
+  `python3 -m py_compile scripts/validate.py`.
+- The final pre-archive worktree was clean, and independent goal-first
+  implementation and check passes found no remaining task-scoped defects.
