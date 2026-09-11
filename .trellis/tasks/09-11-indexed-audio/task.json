@@ -1,7 +1,7 @@
 {
-  "id": "songloft-audio-chain",
-  "name": "songloft-audio-chain",
-  "title": "Songloft audio provider chain (indexed-audio)",
+  "id": "indexed-audio",
+  "name": "indexed-audio",
+  "title": "Indexed audio passthrough chain (streamed fMP4)",
   "description": "",
   "status": "planning",
   "dev_type": null,
