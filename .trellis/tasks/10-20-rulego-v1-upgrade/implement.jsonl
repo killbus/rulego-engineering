@@ -1,0 +1,7 @@
+{"file": ".trellis/tasks/10-20-rulego-v1-upgrade/research/rulego-core-v1.0.0-facts.md", "reason": "RuleGo v1.0.0 核心事实：版本常量、Go 版本、动态插件加载契约、插件面向 API 面 diff（三插件零 breaking 的证据）、v1.0.0 发布产物与 CGO 约束"}
+{"file": ".trellis/tasks/10-20-rulego-v1-upgrade/research/plugin-abi-contract-and-repo-impact.md", "reason": "插件 ABI 契约（plugin-abi.lock 字段映射 v0.37.0→v1.0.0）、五仓逐仓影响面、go.mod pin 错位、co-existence 三角、升级顺序与依赖、回滚点"}
+{"file": ".trellis/spec/guides/rulego-plugin-delivery.md", "reason": "动态插件构建/发布/安装证据规范——ABI 契约链、构建输入 pin、发布证据、共存要求、安装回读清单"}
+{"file": ".trellis/spec/guides/rulego-runtime-verification.md", "reason": "运行时验证规范——注册回读、部署回读、证据阶梯（node tests / 匹配运行时调用 / HTTP 探针 / 系统 trace）"}
+{"file": ".trellis/spec/guides/rulego-delivery-workflow.md", "reason": "交付工作流——commit 边界、验证放置（本地快检 vs CI 重活）、完成审计、跨仓委派纪律"}
+{"file": ".trellis/spec/guides/rulego-ownership.md", "reason": "仓库所有权与权威源——谁拥有 ABI lock/SDK/runtime/插件契约/部署状态；注意 indexed-vod→indexed-media 指针待 Phase 3.3 更新"}
+{"file": ".trellis/tasks/10-20-rulego-v1-upgrade/research/abi-byte-canonicalization.md", "reason": "abi_id/lock_digest 的 LF 字节口径实测取证与修复面、tests/run.sh 本地全绿证据、PR 触发与凭据事实；1.3/1.4/1.6/1.7 执行时的口径依据"}

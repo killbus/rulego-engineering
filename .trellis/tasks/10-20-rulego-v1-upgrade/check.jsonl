@@ -1,0 +1,7 @@
+{"file": ".trellis/tasks/10-20-rulego-v1-upgrade/research/rulego-core-v1.0.0-facts.md", "reason": "check 需对照 v1.0.0 核心事实（API 面、CGO 约束、发布产物）确认升级改动是否落在正确边界"}
+{"file": ".trellis/tasks/10-20-rulego-v1-upgrade/research/plugin-abi-contract-and-repo-impact.md", "reason": "check 需对照 ABI 契约字段映射与逐仓影响面，核验 go.mod pin/ABI sidecar/版本号联动/CI 断言是否一致且无遗漏"}
+{"file": ".trellis/spec/guides/rulego-plugin-delivery.md", "reason": "发布证据规范——检查插件 artifact 是否满足校验和/ABI sidecar/匹配运行时加载/共存/架构覆盖"}
+{"file": ".trellis/spec/guides/rulego-runtime-verification.md", "reason": "运行时验证规范——检查注册回读、部署回读、证据阶梯是否覆盖所声称的结论"}
+{"file": ".trellis/spec/guides/rulego-delivery-workflow.md", "reason": "完成审计规范——把每个验收项映射到权威证据，区分 proving/contradicting/incomplete/indirect/missing"}
+{"file": ".trellis/spec/guides/rulego-ownership.md", "reason": "所有权边界——确认改动落在正确的 owning 仓库，未越界引用废弃仓或 WIP"}
+{"file": ".trellis/tasks/10-20-rulego-v1-upgrade/research/abi-byte-canonicalization.md", "reason": "check 需据此核验 abi_id/lock_digest 是否为 CI(LF) 口径、tr 归一化是否只在 CI 上为 no-op、本地绿是否被误当作 CI 证据"}

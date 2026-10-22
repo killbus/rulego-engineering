@@ -1,0 +1,37 @@
+go toolchain: go1.25.1
+-> unzip C:\Users\ying\AppData\Local\Temp\rulego-v100-resolve.3293\gomodcache\cache\download\gopkg.in\yaml.v3\@v\v3.0.1.zip: write C:\Users\ying\AppData\Local\Temp\rulego-v100-resolve.3293\gomodcache\gopkg.in\yaml.v3@v3.0.1\encode_test.go: There is not enough space on the disk.
+-> unzip C:\Users\ying\AppData\Local\Temp\rulego-v100-resolve.3293\gomodcache\cache\download\google.golang.org\api\@v\v0.238.0.zip: write C:\Users\ying\AppData\Local\Temp\rulego-v100-resolve.3293\gomodcache\google.golang.org\api@v0.238.0\jobs\v3\jobs-gen.go: There is not enough space on the disk.
+go: cel.dev/expr@v0.25.1: verifying go.mod: cel.dev/expr@v0.25.1/go.mod: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: cloud.google.com/go/auth@v0.16.2: verifying go.mod: cloud.google.com/go/auth@v0.16.2/go.mod: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: cloud.google.com/go/auth/oauth2adapt@v0.2.8: verifying go.mod: cloud.google.com/go/auth/oauth2adapt@v0.2.8/go.mod: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: cloud.google.com/go/compute@v1.23.3: verifying go.mod: cloud.google.com/go/compute@v1.23.3/go.mod: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: github.com/Azure/azure-sdk-for-go/sdk/azcore@v1.18.0: verifying go.mod: github.com/Azure/azure-sdk-for-go/sdk/azcore@v1.18.0/go.mod: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: github.com/Azure/azure-sdk-for-go/sdk/internal@v1.11.1: verifying go.mod: github.com/Azure/azure-sdk-for-go/sdk/internal@v1.11.1/go.mod: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: github.com/alecthomas/kingpin/v2@v2.4.0: verifying go.mod: github.com/alecthomas/kingpin/v2@v2.4.0/go.mod: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: github.com/alecthomas/template@v0.0.0-20190718012654-fb15b899a751: verifying module: github.com/alecthomas/template@v0.0.0-20190718012654-fb15b899a751: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: github.com/aws/aws-sdk-go-v2/feature/ec2/imds@v1.16.30: verifying go.mod: github.com/aws/aws-sdk-go-v2/feature/ec2/imds@v1.16.30/go.mod: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: github.com/bitly/go-simplejson@v0.5.0: verifying module: github.com/bitly/go-simplejson@v0.5.0: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: github.com/bugsnag/bugsnag-go@v1.4.0: verifying module: github.com/bugsnag/bugsnag-go@v1.4.0: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: github.com/certifi/gocertifi@v0.0.0-20190105021004-abcd57078448: verifying module: github.com/certifi/gocertifi@v0.0.0-20190105021004-abcd57078448: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: github.com/dop251/goja_nodejs@v0.0.0-20211022123610-8dd9abb0616d: verifying module: github.com/dop251/goja_nodejs@v0.0.0-20211022123610-8dd9abb0616d: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: github.com/emersion/go-message@v0.15.0: verifying module: github.com/emersion/go-message@v0.15.0: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: github.com/flosch/pongo2/v4@v4.0.2: verifying go.mod: github.com/flosch/pongo2/v4@v4.0.2/go.mod: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: github.com/go-playground/validator/v10@v10.14.1: verifying go.mod: github.com/go-playground/validator/v10@v10.14.1/go.mod: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: github.com/iancoleman/strcase@v0.3.0: verifying go.mod: github.com/iancoleman/strcase@v0.3.0/go.mod: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: github.com/knadh/koanf/maps@v0.1.2: verifying go.mod: github.com/knadh/koanf/maps@v0.1.2/go.mod: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: github.com/konsorten/go-windows-terminal-sequences@v1.0.3: verifying module: github.com/konsorten/go-windows-terminal-sequences@v1.0.3: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: github.com/matttproud/golang_protobuf_extensions@v1.0.1: verifying module: github.com/matttproud/golang_protobuf_extensions@v1.0.1: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: github.com/patrickmn/go-cache@v2.1.0+incompatible: verifying go.mod: github.com/patrickmn/go-cache@v2.1.0+incompatible/go.mod: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: github.com/smartystreets/assertions@v1.1.0: verifying module: github.com/smartystreets/assertions@v1.1.0: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: golang.org/x/telemetry@v0.0.0-20240228155512-f48c80bd79b2: verifying module: golang.org/x/telemetry@v0.0.0-20240228155512-f48c80bd79b2: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: unzip C:\Users\ying\AppData\Local\Temp\rulego-v100-resolve.3293\gomodcache\cache\download\google.golang.org\api\@v\v0.238.0.zip: write C:\Users\ying\AppData\Local\Temp\rulego-v100-resolve.3293\gomodcache\google.golang.org\api@v0.238.0\jobs\v3\jobs-gen.go: There is not enough space on the disk.
+go: gopkg.in/evanphx/json-patch.v4@v4.12.0: verifying go.mod: gopkg.in/evanphx/json-patch.v4@v4.12.0/go.mod: open C:\Users\ying\go\pkg\sumdb\sum.golang.org\latest: Access is denied.
+go: unzip C:\Users\ying\AppData\Local\Temp\rulego-v100-resolve.3293\gomodcache\cache\download\gopkg.in\yaml.v3\@v\v3.0.1.zip: write C:\Users\ying\AppData\Local\Temp\rulego-v100-resolve.3293\gomodcache\gopkg.in\yaml.v3@v3.0.1\encode_test.go: There is not enough space on the disk.
+go: gotest.tools/v3@v3.5.2: read "https://proxy.golang.org/gotest.tools/v3/@v/v3.5.2.zip": write C:\Users\ying\AppData\Local\Temp\rulego-v100-resolve.3293\gomodcache\cache\download\gotest.tools\v3\@v\v3.5.2.zip19780711.tmp: There is not enough space on the disk.
+go: honnef.co/go/tools@v0.0.0-20190523083050-ea95bdfd59fc: read "https://proxy.golang.org/honnef.co/go/tools/@v/v0.0.0-20190523083050-ea95bdfd59fc.zip": write C:\Users\ying\AppData\Local\Temp\rulego-v100-resolve.3293\gomodcache\cache\download\honnef.co\go\tools\@v\v0.0.0-20190523083050-ea95bdfd59fc.zip197136348.tmp: There is not enough space on the disk.
+go: open C:\Users\ying\AppData\Local\Temp\rulego-v100-resolve.3293\gomodcache\cache\download\k8s.io\apimachinery\@v\v0.32.3.lock: There is not enough space on the disk.
+go: open C:\Users\ying\AppData\Local\Temp\rulego-v100-resolve.3293\gomodcache\cache\download\k8s.io\client-go\@v\v0.32.3.lock: There is not enough space on the disk.
+go: open C:\Users\ying\AppData\Local\Temp\rulego-v100-resolve.3293\gomodcache\cache\download\k8s.io\klog\@v\v1.0.0.lock: There is not enough space on the disk.
+go: open C:\Users\ying\AppData\Local\Temp\rulego-v100-resolve.3293\gomodcache\cache\download\k8s.io\klog\v2\@v\v2.130.1.lock: There is not enough space on the disk.
+go: open C:\Users\ying\AppData\Local\Temp\rulego-v100-resolve.3293\gomodcache\cache\download\k8s.io\kube-openapi\@v\v0.0.0-20241105132330-32ad38e42d3f.lock: There is not enough space on the disk.
+go: open C:\Users\ying\AppData\Local\Temp\rulego-v100-resolve.3293\gomodcache\cache\download\k8s.io\utils\@v\v0.0.0-20250321185631-1f6e0b77f77e.lock: There is not enough space on the disk.
