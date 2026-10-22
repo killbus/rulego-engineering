@@ -71,6 +71,31 @@ run.headSha == 被 tag 的 commit
 校验（`verify-workflows.py`，YAML 解析而非正则）：三仓 6 个 workflow
 `floating_refs=0`、`missing_persist_credentials=0`、`concurrency=True`。
 
+## 首轮 CI 实测：钉固引用被真实执行（三仓 PR 全绿）
+
+PR：origin [#3](https://github.com/killbus/rulego-resource-origin/pull/3) ·
+indexed-media [#4](https://github.com/killbus/rulego-indexed-media/pull/4) ·
+ffmpeg-over-ip [#1](https://github.com/killbus/rulego-ffmpeg-over-ip/pull/1)
+
+| 仓 | run | 结论 | job 明细 |
+| --- | --- | --- | --- |
+| `rulego-resource-origin` | `39797558518` | success | `actionDate`：test / build amd64 / build arm64 / release-metadata 全 success |
+| `rulego-indexed-media` | `39797584463` | success | test（含 `go test -race`）/ build ×2 / e2e HLS seek / release-metadata 全 success |
+| `rulego-ffmpeg-over-ip` | `39797591889` | success | pinned-upstream / test / build ×2 / release-metadata 全 success |
+
+日志里步骤名直接是可解析的钉固引用，即钉固值确实被 Actions 解析并执行：
+
+```text
+✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+✓ Run actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+✓ Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+```
+
+读取教训：`gh run view --json jobs` 首次返回时 job 列表**会滞后于 run 状态**
+（run 已 `completed/success`，jobs 里还有 `in_progress`/`queued`）；
+而 `--jq` 里写 `select(...)` 的计数在 PowerShell 里被引号吃掉过，报出
+`jobs=1` 这种自相矛盾的值。终态判定改用 `--json` 原样返回 + 本地反序列化逐 job 看。
+
 ## 未做（需单独批准，属远端仓库设置写入）
 
 - 分支保护 + required status checks。开启后"必须先 PR 才能进 main"，
