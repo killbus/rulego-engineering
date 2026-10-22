@@ -159,9 +159,19 @@
     匿名 pull token 是这台机器唯一的 registry 回读通道。
   - 详见 `research/g3-abi-publish.md`。**matching-runtime 插件加载仍在三仓 CI 里做**
     （步骤 2/3 的 `test` job），本机不补。
-- [ ] **1.9**（并行可）标准/all 流：`publish.yml` dispatch（或等每日 cron）产出
-  `rulego-server:v1.0.0[-all]`；`verify-published.sh` 绿。
-  验证 `fetch-release.sh` 对 v1.0.0 包成员（`config.conf`/`node_pool.json`/`editor/index.html`）校验通过。
+- [x] **1.9 已完成（实为合并前 2 天就已产出，本轮只做回读定位）**：
+  GHCR 上 `rulego-server:v1.0.0` = `sha256:ea0bf619…`、`v1.0.0-all` = `sha256:92a8a388…`，
+  且 `latest`/`latest-all` 的 digest 与之相同（移动别名已跟上）。
+  - 真正执行发布的是 cron run `39400807187`（`2026-10-20T09:27Z`，head `a498c9e`）：
+    `Publish standard image` + `Publish all image` 两个 job 都 success，
+    即 `fetch-release.sh`（v1.0.0 包成员校验）与 `verify-published.sh`
+    （版本 tag + 移动别名）当时就绿了。
+  - 之后每天的 cron 都把 publish job **skipped**（幂等：tag 已存在），
+    包括合并后 09:26 那次——所以"等 cron 产出"这条根本不需要等。
+  - **重要区分**：标准/all 流**不受 ABI lock 约束**。`v1.0.0` 标准镜像的
+    config labels 只有 `io.rulego.image.variant=standard`，**没有** `io.rulego.abi.*`，
+    `org.opencontainers.image.revision` 是打包仓的 `a498c9e`（不是 `006436e`）——
+    这是正确的：只有 `-plugin` 变体携带 ABI 身份。别把标准镜像的 revision 当作 ABI 证据。
 
 **回滚点 R1**：`plugin-abi.lock` 与 tests 的改动是独立 commit，可整体 revert；
 旧 `-plugin` 镜像 tag/digest 不可变，永久可回指。

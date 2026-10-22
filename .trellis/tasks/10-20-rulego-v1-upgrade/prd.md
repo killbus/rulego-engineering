@@ -93,8 +93,11 @@
    回读通道替代：本机无 docker CLI，改用 GHCR 匿名 pull token + registry API
    直接读 tag 的 `Docker-Content-Digest`、index 子镜像与 config labels/annotations
    （比"本地 docker 看得见"更接近事实源）。见 `research/g3-abi-publish.md` §3。
-4. [ ] 标准/all 镜像流产出 `rulego-server:v1.0.0[-all]`，
+4. [x] 标准/all 镜像流产出 `rulego-server:v1.0.0[-all]`，
    `fetch-release.sh` 成员校验（`config.conf`/`node_pool.json`/`editor/index.html`）通过。
+   实测：cron run `39400807187` 两个 publish job 全绿；registry 回读
+   `v1.0.0`=`sha256:ea0bf619…`、`v1.0.0-all`=`sha256:92a8a388…`＝`latest`/`latest-all`。
+   注：标准/all 流不带 `io.rulego.abi.*`，ABI 身份只在 `-plugin` 变体上。
 
 **B. 插件仓升级**
 5. [ ] 三仓 `go.mod` 的 `github.com/rulego/rulego` pin == `v1.0.0`（正式 tag），
