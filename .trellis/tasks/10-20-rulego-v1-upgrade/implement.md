@@ -29,7 +29,7 @@
   （当前记录 `c1a73595…`，以实拉为准）→ 填入新 `editor_payload`。
   实测：GitHub release API 返回 `sha256:c1a735950e6572ac6dbc95f578458f8d6f5d5ad8ab3c433a531e8c55c7372650`
   （10613125 B），与 lock 的 `editor_payload.asset.sha256` 逐字符相同。
-- [ ] **1.3** 运行仓库自有 ABI 重签流程（**不手改 lock JSON 的 hash 字段**，全部由脚本重算）：
+- [x] **1.3** 运行仓库自有 ABI 重签流程（**不手改 lock JSON 的 hash 字段**，全部由脚本重算）：
   `scripts/prepare-plugin-abi.sh`（输入 v1.0.0 server 坐标）→ 在
   `golang:1.25.0-bookworm` 内 `CGO_ENABLED=1 go build -buildmode=exe -trimpath` 重编 host
   → `plugin-abi.sh validate --candidate` 重算 `abi_id`/`lock_digest`/module_graph。
@@ -43,21 +43,21 @@
     `GITHUB_ACTIONS=true`，`prepare-plugin-abi.sh:101` 断言 `GOVERSION==go1.25.0`
     （本机 go1.25.1/windows 必红）。所以本地只能把 candidate 备料算对，
     `abi_id`/`lock_digest`/module graph 的**权威值只能由 CI 产出**，本地值仅用于自证一致。
-- [~] **1.4** 更新 `plugin-abi.lock`：`rulego_server.release_version=v1.0.0`、
+- [x] **1.4** 更新 `plugin-abi.lock`：`rulego_server.release_version=v1.0.0`、
   revision/go_mod_sha256/go_sum_sha256、`rulego_core` 坐标、`module_graph`、`editor_payload`
-  **均已写入并被 `validate --candidate` 接受**（PASS，见 `research/abi-byte-canonicalization.md`）。
-  标为部分完成的原因：这些值不是"脚本产物"——`prepare-plugin-abi.sh` 是校验器
-  （CI-only + 断言 `GOVERSION==go1.25.0`），本地无法生成；v1.0.0 坐标是按其同一套
-  算法在本地独立算出并用 CI 口径归一化写入，**最终仍需 CI 复核后才能声称重签完成**。
+  **已写入并由 CI 复核通过**（PR #1 三 job 全绿）。
+  口径说明：这些值不是本地"脚本产物"——`prepare-plugin-abi.sh` 是校验器
+  （CI-only + 断言 `GOVERSION==go1.25.0`），本地只能按其同一套算法把 candidate 备料算对；
+  权威值由 CI 回读确认，两者已逐字节相同（`research/ci-matrix-pr1.md` §1）。
   - 已实测复核（与 `git show v1.0.0:server/go.{mod,sum}` 及 resolver 产物一致）：
     `go_mod_sha256=e525b51161aed32d97e51e257efdea4c1f6ebba4b949ba58e0398588722ddff0`、
     `go_sum_sha256=db5464f62d5b2ae75a79544033912f7776c15267080171957ced4faa47595b32`、
     `list_sha256=47be6910…`、`graph_sha256=1ed5c015…`（两份产物 CR 计数为 0）、
     `editor_payload=c1a73595…`（v1.0.0 amd64 asset）。
-  - 待按 CI 口径回填的派生值：`abi_id=abi-3e0c9d46dddaf6235cfe609d543222f07f8e1abf3374f0669bf703df85063885`；
-    由整份 lock 导出的 `lock_digest` 此时不可预先知道（含 abi_id 字段本身），
-    只能在回填 `abi_id` 后重算 → 当前值 `sha256:111ea6bbbce3d075752ff3639c77f9ca1cf129020ebf7da4f78482b095d775ef`，
-    最终以 CI 输出为准。
+  - 派生值已由 CI 确认（不再是"待复核"）：
+    `abi_id=abi-3e0c9d46dddaf6235cfe609d543222f07f8e1abf3374f0669bf703df85063885`、
+    `lock_digest=sha256:111ea6bbbce3d075752ff3639c77f9ca1cf129020ebf7da4f78482b095d775ef`
+    （amd64/arm64 两份 native evidence 一致回读）。
 - [x] **1.5** 同步 tests 版本断言。**仅改与 lock 绑定的文件**：
   `tests/plugin-abi-lock.sh`（v0.37.0→v1.0.0、`v0.37.0-plugin`→`v1.0.0-plugin`、
   revision/core 版本）、`tests/fetch-plugin-editor.sh`、`tests/plugin-image-contract.sh`
@@ -95,7 +95,7 @@
     只是这条线的一个约束，不是拆分不可能性的根因。
   - 更正一处早先误判：`tests/fetch-plugin-editor.sh` 的改动**不是**独立 bug 修复，
     它只是 mock 版本串随 lock 的 `editor_payload.version` 平移，属同一关切。
-- [ ] **审批门禁 G2（必须走 PR，禁止为触发 CI 而直接 push main）**：
+- [x] **审批门禁 G2 已完成（PR #1 全矩阵绿）**：
   push `[SD]` 功能分支 `plugin-abi-v1.0.0` → 开 PR → `plugin-abi.yml` 由
   `pull_request` 触发全矩阵（contract + amd64/arm64 native）。
   - `plugin-abi.yml` 的触发只有 `pull_request` 与 `push: branches:[main]`，**无**
