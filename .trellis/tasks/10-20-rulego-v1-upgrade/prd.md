@@ -81,13 +81,18 @@
 > 每条给出可执行的核验命令/回读，"绿"必须来自真实执行，不得声称未运行的验证。
 
 **A. server-docker ABI 重签**
-1. [ ] 新 `plugin-abi.lock` 中 `rulego_server.release_version == "v1.0.0"`，
+1. [x] 新 `plugin-abi.lock` 中 `rulego_server.release_version == "v1.0.0"`，
    `rulego_core.version` 为 v1.0.0 对应的正式 tag，`go_mod_sha256`/`go_sum_sha256`
    与 v1.0.0 server 源码实际 `sha256sum` 一致（命令可复算）。
-2. [ ] `plugin-abi.sh validate --candidate`（或等价 CI job `plugin-abi.yml`）全绿。
-3. [ ] 新 `rulego-plugin-sdk` 与 `rulego-server`（`-plugin`）镜像在 GHCR 存在，
+   由 `prepare-plugin-abi.sh:113-116` 在 `golang:1.25.0-bookworm` 内重算并断言通过。
+2. [x] `plugin-abi.sh validate --candidate`（或等价 CI job `plugin-abi.yml`）全绿。
+   实跑三轮 `pull_request`/`push` + 一轮 `validate --release`（run `39754464997`）。
+3. [x] 新 `rulego-plugin-sdk` 与 `rulego-server`（`-plugin`）镜像在 GHCR 存在，
    `ghcr.io/killbus/...` 可 `docker pull`，`runtime` 镜像带
    `io.rulego.server.release == v1.0.0` label（`docker inspect` 回读）。
+   回读通道替代：本机无 docker CLI，改用 GHCR 匿名 pull token + registry API
+   直接读 tag 的 `Docker-Content-Digest`、index 子镜像与 config labels/annotations
+   （比"本地 docker 看得见"更接近事实源）。见 `research/g3-abi-publish.md` §3。
 4. [ ] 标准/all 镜像流产出 `rulego-server:v1.0.0[-all]`，
    `fetch-release.sh` 成员校验（`config.conf`/`node_pool.json`/`editor/index.html`）通过。
 

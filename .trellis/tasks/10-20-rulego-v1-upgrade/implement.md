@@ -128,16 +128,37 @@
     `localhost:5000` 本地 registry 的（`staging_reference: null`），**不是 GHCR digest**。
     插件 sidecar 的 `runtime`/`sdk` 两字段只能取自 `plugin-abi-publish.yml` 的
     `plugin-abi-release-<sha>` artifact。详见 `research/ci-matrix-pr1.md` §6。
-- [ ] **审批门禁 G3**：**合并进 main 之后**在 main 上 dispatch
-  `plugin-abi-publish.yml`（`publish=true` + `plugin-abi-release` environment 审批）
-  发布新 `rulego-plugin-sdk` + `rulego-server`（`-plugin`）镜像，记录新 GHCR digest。
+- [x] **审批门禁 G3 已完成（用户批准"发"）**：在 main `006436e` 上 dispatch
+  `plugin-abi-publish.yml`（`publish=true`），run `39754464997` **success**（4 job 全绿）。
+  - dispatch 前先 `git ls-remote origin refs/heads/main` 确认 main 仍是 `006436e`，
+    避免 dispatch 到被移动的 ref。
+  - `plugin-abi-release` environment 实测 `protection_rules: []`——**没有人工审批闸门**，
+    因此"批准 dispatch"就是唯一的发布闸门，Agent 不得自行触发。
+  - canonical tag 首写（不可逆）：`rulego-plugin-sdk:abi-3e0c9d46…` → `sha256:c5fadb57…`；
+    `rulego-server:v1.0.0-plugin` → `sha256:53719b71…`。
+  - GHCR digest **只**存在于本步的 `plugin-abi-release-<sha>` artifact；
+    验证矩阵的 digest 是 job 内 `localhost:5000` 的（见 `ci-matrix-pr1.md` §6）。
   - 为什么必须在合并后的 main 上：`plugin-abi-build.sh:58` 用
     `packaging_revision=${GITHUB_SHA}`，而插件仓 sidecar 的 `packaging_revision`
     必须指向 server-docker 的 **main commit**；PR merge-ref 的 SHA 不能进
-    `plugin-abi-release.json`。
-- [ ] **1.8** 回读：`docker manifest inspect` 两镜像存在且 digest 与 lock 一致；
-  `docker run --rm <runtime> -c "echo ok"` 或 label 回读
-  `io.rulego.server.release == v1.0.0`。
+    `plugin-abi-release.json`。本轮实测 `packaging_revision=006436e…` 正确。
+- [x] **1.8 已完成（换回读通道）**：本机**没有 docker CLI**，
+  `docker manifest inspect` / `docker run` 不可用。改用 GHCR 匿名 pull token
+  （`GET /token?scope=repository:killbus/<pkg>:pull`）+ registry API 回读，
+  这比"本地 docker 看得见"更接近事实源：
+  - 两个 canonical tag 的 `Docker-Content-Digest` 与 release record 逐字节相同；
+  - runtime index 含 `linux/amd64` + `linux/arm64`（另 2 个 attestation）；
+  - runtime child config labels：`io.rulego.server.release=v1.0.0`、
+    `io.rulego.abi.lock.digest=sha256:e19c9657…`、`io.rulego.server.revision=45d1a6c4…`；
+  - sdk index annotations：同组值 + `io.rulego.abi.platforms=linux/amd64,linux/arm64`；
+  - 两处 `org.opencontainers.image.revision` 均为 `006436e…`。
+  - 元数据位置不对称是设计而非缺陷：SDK 在 index annotations（复数 `platforms`）、
+    runtime 在 child config labels（单数 `platform`）；`verify-plugin-oci.sh:53`
+    正向断言 index 上不得出现单数 `platform`。
+  - 本机 token 无 `read:packages` scope（`gh api users/killbus/packages/...` 403），
+    匿名 pull token 是这台机器唯一的 registry 回读通道。
+  - 详见 `research/g3-abi-publish.md`。**matching-runtime 插件加载仍在三仓 CI 里做**
+    （步骤 2/3 的 `test` job），本机不补。
 - [ ] **1.9**（并行可）标准/all 流：`publish.yml` dispatch（或等每日 cron）产出
   `rulego-server:v1.0.0[-all]`；`verify-published.sh` 绿。
   验证 `fetch-release.sh` 对 v1.0.0 包成员（`config.conf`/`node_pool.json`/`editor/index.html`）校验通过。
@@ -256,7 +277,7 @@
 | --- | --- | --- |
 | G1 | 版本号方案 + client 方案确认 | **已批准** |
 | G2 | push `[SD]` 功能分支 + 开 PR（`pull_request` 触发 plugin-abi.yml；**不为触发 CI 直接 push main**） | 步骤 1.7 |
-| G3 | 合并后的 main 上 dispatch `plugin-abi-publish.yml` 发布 SDK/runtime 镜像 | 步骤 1.8 前 |
+| G3 | 合并后的 main 上 dispatch `plugin-abi-publish.yml` 发布 SDK/runtime 镜像 | **已批准并完成**（environment 无人工审批闸门，故批准 dispatch 即发布闸门） |
 | G4 | push `[FF]` master | 步骤 2.6 |
 | G5 | push `[RO]` main / `[IM]` main | 步骤 3.6 |
 | G6 | 三仓 `release.yml` dispatch 发布 | 步骤 5 |
