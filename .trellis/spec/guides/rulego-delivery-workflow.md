@@ -53,12 +53,33 @@ A commit represents one coherent first-principles change:
 
 The final history describes the resulting capability, not discarded detours.
 
+A contract value and the assertions that read it cannot be split apart: each
+revision that separates them fails its own checks. When such a change also
+carries work that is independent of the contract version, cut the commits along
+that independence rather than along file type. The version-independent work
+lands first and stays green against the old contract; the re-sign follows and
+carries the value, the assertions, and the documentation that must move
+together. Prove the split by running the gate on each interim revision, not
+only on the tip.
+
+Iterative work advances on a dedicated branch so its history stays traceable
+and isolated from the shared default branch. Reaching the merge point is gated:
+before merging to the default branch, resolve commit fragmentation first —
+collapse the branch's interim commits into the small set of coherent logical
+commits the change actually is. A fragmented branch is not merge-ready, and the
+consolidation is a prerequisite of the merge, not cleanup performed after it.
+
 ## Verification placement
 
 Run fast, deterministic checks locally. Put compilation, container builds,
 multi-architecture coverage, matching-runtime plugin loads, integration suites,
 and release publication in the owning repository's GitHub workflows. Workflow
 files should call repository-owned scripts so validation logic has one source.
+
+A verification claim is only as valid as the environment that produced it. A
+local toolchain is not a stand-in for the pinned CI environment, so evidence
+that depends on the exact toolchain, platform, or dependency identity must come
+from CI; a lighter local check may support it but never replace it.
 
 After pushing an authorized change:
 
