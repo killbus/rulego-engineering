@@ -84,7 +84,49 @@ ready 态下 `plugin-abi-build.sh:201-207` 会真正用 ceilings 断言，实测
 `packaging_revision` 仍是 merge ref SHA（本轮 `d2e12eaa…`，不等于 head `654b044`），
 第 3 节的结论在 ready 轮复现。
 
-## 5. 剩余步骤（按 implement.md）
+## 5. 合并（rebase）后的 main 实测
+
+PR #1 以 **rebase** 方式合并（用户批准）：main `a498c9e` → `006436e`，三个逻辑 commit
+线性落地，无 merge commit（与该仓历史 0 merge commit 的既有口径一致）。
+
+| 分支 SHA | main SHA |
+| --- | --- |
+| `54f01e4` | `7dae0a8` |
+| `568f6c9` | `b1c20fe` |
+| `654b044` | `006436e` |
+
+`git diff origin/main plugin-abi-v1.0.0` 为空 → 合并树与被批准的分支逐字节一致。
+
+合并触发 `push: branches:[main]` 的那一轮 run `39752226819`（head `006436e`）**success**，
+这是 main 自证的第三轮绿。evidence 回读：
+
+```text
+abi_id            = abi-3e0c9d46dddaf6235cfe609d543222f07f8e1abf3374f0669bf703df85063885
+lock_digest       = sha256:e19c9657ede2e9da86aae38c2ab972d32ff22aa2f2c8f1aa327714967baf8f80
+packaging_revision= 006436e34d1fa2cd811f840547724fb0ace3605b   ← 真正的 main commit
+```
+
+`packaging_revision` 终于等于一个消费方可引用的 default-branch commit。
+
+## 6. 边界：矩阵跑的 image digest 不是 GHCR digest
+
+三轮（两次 PR + 一次 main）evidence 里 `sdk.local_repository` / `runtime.local_repository`
+都是 `localhost:5000/...`，`staging_reference` 为 `null`。
+也就是说 `sdk.index_digest` / `runtime.index_digest` 是 **job 内本地 registry 的 digest**，
+**不是** `ghcr.io/killbus/...` 的 digest。
+
+→ 插件侧 `plugin-abi-release.json` 的 `runtime`/`sdk` 两个字段**只能**来自
+`plugin-abi-publish.yml`（`PLUGIN_ABI_PUBLISH=true` → 登录 GHCR → `plugin-abi-publish.sh`
+产出 `tmp/plugin-abi-release.json`）的 `plugin-abi-release-<sha>` artifact。
+任何"从验证矩阵里抄 digest 填 sidecar"的做法都会指向不存在的 GHCR digest。
+
+## 7. 剩余步骤（按 implement.md）
+
+1. G3：在 main（`006436e`）上 dispatch `plugin-abi-publish.yml`（`publish=true`）。
+   `plugin-abi-release` environment 当前 `protection_rules: []`（无人工审批闸门）。
+2. 从 `plugin-abi-release-<sha>` artifact 取 GHCR 的 sdk/runtime digest，
+   连同 `packaging_revision=006436e…` 写入三仓 `plugin-abi-release.json`。
+
 
 1. 合并 PR #1（需用户批准）→ 在合并后的 main 上 dispatch `plugin-abi-publish.yml`（G3）。
 2. 取新 SDK/runtime GHCR digest，并以合并后的 main commit 作 `packaging_revision`

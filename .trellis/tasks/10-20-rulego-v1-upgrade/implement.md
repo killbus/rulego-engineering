@@ -118,6 +118,16 @@
     `abi_id` 不变（release 块不进 ABI 身份，但进 lock 哈希）→
     **插件侧 sidecar 记这个 ready 态 digest**。详见 `research/ci-matrix-pr1.md` §4。
   - `packaging_revision` 在 ready 轮仍是 merge ref SHA（`d2e12eaa…`），G3 必须在 main 上跑这一点复现。
+- [x] **PR #1 已合并（用户批准 rebase）**：main `a498c9e` → `006436e`，
+  三个逻辑 commit 线性落地（`7dae0a8`/`b1c20fe`/`006436e`），无 merge commit
+  （与该仓历史 0 merge commit 一致）。碎片化判定：3 个 commit 各是一个连贯关切、
+  闸门在中间 revision 也跑过，无需 fixup/squash（`rulego-delivery-workflow.md:66-70`）。
+  合并后 main 自证轮 run `39752226819`（head `006436e`）**success**，
+  `packaging_revision` 首次等于可引用的 main commit `006436e…`。
+  - **新发现并登记的边界**：三轮验证矩阵的 `sdk`/`runtime` digest 都是 job 内
+    `localhost:5000` 本地 registry 的（`staging_reference: null`），**不是 GHCR digest**。
+    插件 sidecar 的 `runtime`/`sdk` 两字段只能取自 `plugin-abi-publish.yml` 的
+    `plugin-abi-release-<sha>` artifact。详见 `research/ci-matrix-pr1.md` §6。
 - [ ] **审批门禁 G3**：**合并进 main 之后**在 main 上 dispatch
   `plugin-abi-publish.yml`（`publish=true` + `plugin-abi-release` environment 审批）
   发布新 `rulego-plugin-sdk` + `rulego-server`（`-plugin`）镜像，记录新 GHCR digest。
