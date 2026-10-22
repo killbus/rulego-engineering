@@ -1,8 +1,9 @@
 # PR #1 ABI 矩阵实测（G2 已完成）
 
-> 运行：https://github.com/killbus/rulego-server-docker/actions/runs/39733165394
+> 第一轮 `measurement`（head `568f6c9`）：<https://github.com/killbus/rulego-server-docker/actions/runs/39733165394>
+> 第二轮 `ready`（head `654b044`）：<https://github.com/killbus/rulego-server-docker/actions/runs/39739872974>
 > PR：<https://github.com/killbus/rulego-server-docker/pull/1>
-> 触发：`event=pull_request`，head `568f6c9`，结论 **success**（三 job 全绿）。
+> 触发：均为 `event=pull_request`，两轮结论都是 **success**（三 job 全绿）。
 
 ## 1. CI 复核了本地算出的派生身份
 
@@ -51,8 +52,41 @@ G3 必须在合并后的 main 上 dispatch。
 registry 是 job 本地（`localhost:5000/...`，`staging_reference: null`），
 `release.state=measurement` 下不会走 `validate --release`。
 
-## 4. 剩余步骤（按 implement.md）
+## 4. 第二轮 CI：`release.state=ready` 实测（1.7b）
 
-1. 回填 ceilings + `state=ready` 为一个 commit → PR 再跑绿（1.7b）。
-2. 合并 PR → 在 main 上 dispatch `plugin-abi-publish.yml`（G3）。
-3. 取新 SDK/runtime digest → 三插件仓 `plugin-abi-release.json`（步骤 2/3）。
+`654b044` 只改 `plugin-abi.lock` 的 release 块（`state=ready` + 沿用旧已评审 ceilings）。
+run `39739872974`（head `654b044`）三 job 全绿：Validate（3s）/ Native amd64（5m20s）/
+Native arm64（4m24s）。两架构 evidence 一致回读：
+
+```text
+abi_id      = abi-3e0c9d46dddaf6235cfe609d543222f07f8e1abf3374f0669bf703df85063885
+lock_digest = sha256:e19c9657ede2e9da86aae38c2ab972d32ff22aa2f2c8f1aa327714967baf8f80
+```
+
+- `abi_id` 与第一轮相同：它只覆盖构建契约，不含 release 块。
+- `lock_digest` 从 `sha256:111ea6bb…` 变为 `sha256:e19c9657…`：release 块进 manifest 哈希。
+  **插件侧 `plugin-abi-release.json` 必须记 ready 态这个值**，不能记第一轮的。
+
+ready 态下 `plugin-abi-build.sh:201-207` 会真正用 ceilings 断言，实测占用率：
+
+| arch | 对象 | 实测 / ceiling | occupancy |
+| --- | --- | --- | --- |
+| amd64 | sdk compressed | 1,325,272,144 / 1,500,000,000 | 88.4% |
+| amd64 | sdk uncompressed | 3,381,663,230 / 3,800,000,000 | 89.0% |
+| amd64 | runtime compressed | 29,976,185 / 35,000,000 | 85.6% |
+| amd64 | runtime uncompressed | 69,691,934 / 80,000,000 | 87.1% |
+| arm64 | sdk compressed | 1,316,183,819 / 1,500,000,000 | 87.7% |
+| arm64 | sdk uncompressed | 3,388,018,572 / 3,800,000,000 | 89.2% |
+| arm64 | runtime compressed | 28,751,226 / 35,000,000 | 82.1% |
+| arm64 | runtime uncompressed | 80,424,467 / 90,000,000 | 89.4% |
+
+与 measurement 轮的值差在压缩器噪声量级（<0.01%），没有"贴边"通过。
+`packaging_revision` 仍是 merge ref SHA（本轮 `d2e12eaa…`，不等于 head `654b044`），
+第 3 节的结论在 ready 轮复现。
+
+## 5. 剩余步骤（按 implement.md）
+
+1. 合并 PR #1（需用户批准）→ 在合并后的 main 上 dispatch `plugin-abi-publish.yml`（G3）。
+2. 取新 SDK/runtime GHCR digest，并以合并后的 main commit 作 `packaging_revision`
+   → 三插件仓 `plugin-abi-release.json`（步骤 2/3）。
+

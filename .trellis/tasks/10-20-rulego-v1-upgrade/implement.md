@@ -108,12 +108,16 @@
   - 迭代 commit 留在分支上；合并前按
     `.trellis/spec/guides/rulego-delivery-workflow.md` 的合并点纪律 fixup/squash
     成少数连贯 commit，再 merge main。
-- [ ] **1.7b（`measurement` → `ready` 需要第二轮 CI，一轮做不到）**：
-  第一轮的 lock 处于 `release.state=measurement` 且 size ceilings 为 `null`
-  （`plugin-abi-build.sh:200` 只在 `release_state==ready` 时断言 ceiling，
-  因此 measurement 轮会**收集** image size 而不因 null 失败）。
-  取 PR 证据里的实测 size → 回填正值 ceilings + `state=ready` 为一个 coherent commit
-  → PR 再跑绿 → 才允许 merge（`README.md` 的 release-ready 流程即此口径）。
+- [x] **1.7b 已完成（`measurement` → `ready` 的第二轮 CI）**：
+  第一轮 lock 处于 `release.state=measurement` 且 ceilings 为 `null`
+  （`plugin-abi-build.sh:200` 只在 `release_state==ready` 时断言 ceiling）。
+  `654b044` 回填 ceilings（**沿用旧已评审值**——全部实测值都在其中，最紧 89.4%，
+  不重新"从被约束的那次运行反推闸门"）+ `state=ready`，仅动 `plugin-abi.lock` 一个文件。
+  - run `39739872974`（`event=pull_request`，head `654b044`）三 job 全绿。
+  - ready 态 `lock_digest` → `sha256:e19c9657ede2e9da86aae38c2ab972d32ff22aa2f2c8f1aa327714967baf8f80`，
+    `abi_id` 不变（release 块不进 ABI 身份，但进 lock 哈希）→
+    **插件侧 sidecar 记这个 ready 态 digest**。详见 `research/ci-matrix-pr1.md` §4。
+  - `packaging_revision` 在 ready 轮仍是 merge ref SHA（`d2e12eaa…`），G3 必须在 main 上跑这一点复现。
 - [ ] **审批门禁 G3**：**合并进 main 之后**在 main 上 dispatch
   `plugin-abi-publish.yml`（`publish=true` + `plugin-abi-release` environment 审批）
   发布新 `rulego-plugin-sdk` + `rulego-server`（`-plugin`）镜像，记录新 GHCR digest。
