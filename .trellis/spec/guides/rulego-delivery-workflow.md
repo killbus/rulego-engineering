@@ -81,6 +81,16 @@ local toolchain is not a stand-in for the pinned CI environment, so evidence
 that depends on the exact toolchain, platform, or dependency identity must come
 from CI; a lighter local check may support it but never replace it.
 
+Where a release is gated on a CI run — a run whose success and commit identity
+the publication step re-reads before shipping artifacts it did not rebuild —
+that run's reproducibility is part of the release guarantee. Workflow steps then
+reference pinned action commits rather than floating major tags, check out
+without persisting credentials, and serialize runs per ref so two runs of one
+commit cannot interleave. Pinning to the commit a floating tag resolves to today
+changes no behaviour; prove that by re-parsing the rewritten workflow and
+asserting the document is structurally identical to the original once the
+intended edits are reversed.
+
 After pushing an authorized change:
 
 1. identify the exact remote commit;
