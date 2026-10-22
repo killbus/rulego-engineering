@@ -181,23 +181,35 @@
 > 为什么 FF 先：IM 依赖 FF 的 client 包；FF 的 CI co-existence 又引用 RO/IM。
 > FF 先行可先定 client 版本坐标，减少返工。
 
-- [ ] **2.1** `go.mod` + `plugin/go.mod`：`require github.com/rulego/rulego v1.0.0`，
-  `go mod tidy`（更新 go.sum）。client 源码**预期不改**（D4）。
-- [ ] **2.2** 更新 `plugin-abi-release.json` 为 [SD] 新契约四元组
-  （abi_id/lock_digest/packaging_revision=新 [SD] HEAD/sdk/runtime 新 digest）。
-- [ ] **2.3** 版本联动（用户确认方案后）：`VERSION`、`compatibility.json`
-  （`pluginVersion` + `rulegoRelease=v1.0.0`）、`plugin/node.go`、`plugin/producer.go`
-  的 `Version:`；若发新 client 版本，同步 `plugin/go.mod` 依赖 + CI 硬编码 `h1:` hash。
+- [x] **2.1 已完成**：根 `go.mod` 与 `plugin/go.mod` 均 `require github.com/rulego/rulego
+  v1.0.0`（`go.sum`/`plugin/go.sum` 同步为 `h1:2dMEtgsPPOfu34n8doTzu51tqp4kptGYp5DI07XRGTI=`），
+  `go mod verify` 通过。client 源码零改动（D4），client 模块身份仍 `v0.5.0`，
+  CI 硬编码 `h1:4jeQQTATep8oP1BumDO/DftVAxlDz1SYzU6eA0xxfwU=` 不需改。
+- [x] **2.2 已完成**：`plugin-abi-release.json`（本仓只有根目录一份，CI 里的
+  `plugin/` 前缀来自 checkout `path: plugin`）换成发布态五字段
+  `abi-3e0c9d46…` / `sha256:e19c9657…` / `packaging_revision=006436e3…` /
+  runtime `sha256:53719b71…` / sdk `sha256:c5fadb57…`。
+- [x] **2.3 已完成**：`VERSION`、`compatibility.json`（`pluginVersion=0.5.2` +
+  `rulegoRelease=v1.0.0`）、`plugin/node.go`、`plugin/producer.go` 全部 0.5.1 → 0.5.2。
 - [ ] **2.4** 改 CI co-existence peer（`ci.yml:178-181` 一带）：
   `killbus/rulego-indexed-vod v0.2.0` → `killbus/rulego-indexed-media <新tag>`
   （artifact 名 `indexed-media-rulego-v<ver>-linux-{arch}.so`）；
   `resource-origin v0.1.1` → `resource-origin <新tag>`。
   **注意**：此步依赖 RO/IM 已按新 ABI 发布 release → 实际执行时序为
   FF 先改 go.mod/ABI sidecar 提交（2.1-2.3），co-existence 步（2.4）在 RO/IM 发版后补跑 CI。
-- [ ] **2.5** 本地轻验证：`gofmt -l .`（空）、`go vet ./...`、`go test ./...`、
-  `go test -race ./...`；`GOWORK=off go -C plugin vet/test/-race`。
-- [ ] **2.6** 提交；**审批门禁 G4**：push `[FF]` master → CI `test` job 绿。
-  （build job 因新 ABI 的 runtime 镜像与 peer release 就绪情况，可能在 3.x 后全绿。）
+- [x] **2.5 已完成**：`gofmt -l`（tracked `.go`，空）、根模块 `go vet ./...` +
+  `go test -count=1 ./...`（`client` ok）、`GOWORK=off go -C plugin vet .` +
+  `go -C plugin test -count=1 .`（ok）全绿。`go -C plugin list -m` 回读
+  `ffmpeg-over-ip v0.5.0` + `rulego v1.0.0`。**`-race` 本机跑不了**（`requires cgo`，
+  PATH 无 gcc/clang），由 CI 覆盖。
+- [x] **2.6 提交已完成（本地）**：分支 `feat/rulego-v1-abi-on-hardened`
+  （自 `origin/master 90ce79c`），commit `cd3f446`（9 文件 +16/−16）。
+  **未 push**——G4 待批准，且 push 后 build job 会因 2.4 未做而红（见下）。
+
+> **步骤 2 阻塞（结构性，非 bug）**：三仓 co-existence 互指 + `release.yml`
+> 要求"整条 CI run 全绿"，而 FF/IM 各自需要对方**已发布**的新 ABI 产物 →
+> 死锁。证据与三个解法见 `research/coexistence-release-deadlock.md`。
+> RO 无 peer 下载，是唯一可立即走 G6 发版的仓。
 
 **回滚点 R2**：FF 改动为独立 commit，revert 即回到 v0.37.0 契约。
 
@@ -205,20 +217,33 @@
 
 每仓独立执行（两仓步骤对称，IM 多 client 依赖一项）：
 
-- [ ] **3.1** `go.mod`：`require github.com/rulego/rulego v1.0.0` + `go mod tidy`。
-  （IM 额外：确认 `rulego-ffmpeg-over-ip` 依赖版本按 D4 决策。）
-- [ ] **3.2** `plugin-abi-release.json` 换新契约四元组（与 FF 同一份值，逐字节一致）。
-- [ ] **3.3** 版本联动：`VERSION`、`compatibility.json`（+`rulegoRelease=v1.0.0`）、
-  `node.go` 的 `Version:`。
+- [x] **3.1 已完成（RO + IM）**：两仓 `go.mod` 均 `require github.com/rulego/rulego
+  v1.0.0`（同一 `h1:2dMEtgsP…`）。IM 的 `rulego-ffmpeg-over-ip` 依赖按 D4 保持 `v0.5.0`。
+- [x] **3.2 已完成（RO + IM）**：两份 `plugin-abi-release.json` 五字段与 FF 逐字节一致。
+- [x] **3.3 已完成（RO + IM）**：RO `0.1.3 → 0.2.0`（`VERSION`/`compatibility.json`
+  /`node.go`），IM `0.3.0 → 0.3.1`（同三处）；两仓 `rulegoRelease=v1.0.0`。
 - [ ] **3.4** IM 的 e2e peer 引用（`ci.yml` 下载 ffmpeg-over-ip/resource-origin 的步）
   指向升级后版本。
-- [ ] **3.5** 本地轻验证：`gofmt -l .`、`go vet ./...`、`go test ./...`、
-  `go test -race ./...`（IM 另 `python3 -m unittest discover -s tests/e2e -p 'test_*.py'`）。
-- [ ] **3.6** 提交；**审批门禁 G5**：push `[RO]` main / `[IM]` main → CI `test` job 绿。
-- [ ] **3.7** CI `build` job 全绿：双架构 `.so` + `.sha256` + `.abi.json` 产出；
-  smoke-load 回读 `/api/v1/components` 含本仓节点/处理器、
-  `io.rulego.server.release == v1.0.0` 校验通过。
-  （依赖 [SD] 1.3/1.7 的新 runtime 镜像就绪。）
+- [x] **3.5 已完成（RO + IM）**：两仓 `gofmt -l`（tracked `.go`，空）、`go vet .` 0、
+  `go test -count=1 .` ok（IM 6.6s / RO 17.8s）。**RO 本机测试结果不可信为信号**：
+  `testing.go:1369 TempDir RemoveAll cleanup: … catalog: The directory is not empty`
+  在**未升级的 base 全量跑**里同样随机出现（base 两轮命中 3 个/1 个不同用例，
+  升级分支两轮 0 个/1 个，失败集合每次不同、零业务断言失败）→ 判为 Windows 本机
+  既有 flake，交给 Linux CI 权威判定；本任务不在升级 PR 里顺手改无关测试。
+  另注意：cached 结果会掩盖该现象，一律 `-count=1`。
+- [x] **3.6 已完成（RO）**：走 PR 而非直接 push main（合并点纪律）。
+  `rulego-resource-origin` PR #4（head `c7ae356`）CI run `39810333396` 四 job 全绿
+  （test / build amd64 / build arm64 / release-metadata）→ 用户批准 → **rebase 合并**，
+  main `01c2b23` → `c6731ac`，head 自证轮 run `39811100101` **success**。
+- [x] **3.6 部分完成（IM）**：本地验证同上；PR #5（head `f3e64b7`）CI 中
+  `test` / 双架构 `build` / `release-metadata` **全绿**，仅
+  `Hermetic selected-track TS and HLS seek` 的 `Download and verify peer plugins`
+  红 —— peer 发布产物仍是旧 ABI（实测 `resource-origin v0.1.1` 与
+  `ffmpeg-over-ip v0.5.1` 的 `.abi.json` = `abi-d4fc741b…`/`sha256:5f9501666…`，
+  本仓 sidecar = `abi-3e0c9d46…`/`sha256:e19c9657…`，`jq -e` 判假）。属 3.4 未做 + Step 2 死锁。
+- [x] **3.7 已完成（RO）**：PR 轮与 main 自证轮均产出双架构 `.so`/`.sha256`/`.abi.json`，
+  `sha256sum --check` 与 sidecar 比对通过，`io.rulego.server.release == v1.0.0`
+  断言（`ci.yml:118`）随 build job 一起绿。IM 的 build job 同样已绿。
 
 **回滚点 R3**：RO/IM 各自独立 commit revert。
 

@@ -100,25 +100,41 @@
    注：标准/all 流不带 `io.rulego.abi.*`，ABI 身份只在 `-plugin` 变体上。
 
 **B. 插件仓升级**
-5. [ ] 三仓 `go.mod` 的 `github.com/rulego/rulego` pin == `v1.0.0`（正式 tag），
+5. [x] 三仓 `go.mod` 的 `github.com/rulego/rulego` pin == `v1.0.0`（正式 tag），
    `go mod verify` 通过；`compatibility.json.rulegoRelease == "v1.0.0"`。
-6. [ ] 三仓 `plugin-abi-release.json` 的 `abi_id`/`lock_digest` == server-docker 新
+   实测三仓（RO `c7ae356`、IM `f3e64b7`、FF `cd3f446`）：根 + `plugin/` 全部
+   `h1:2dMEtgsPPOfu34n8doTzu51tqp4kptGYp5DI07XRGTI=`，`go mod verify` = all modules verified。
+6. [x] 三仓 `plugin-abi-release.json` 的 `abi_id`/`lock_digest` == server-docker 新
    `plugin-abi.lock` 的值（逐字节比对），`sdk`/`runtime` digest == 新发布的镜像。
-7. [ ] 三仓版本号三/五处一致（CI 元数据校验 job 绿）：`VERSION`/`compatibility.json`/
-   `node.go`( /producer.go)。
-8. [ ] 三仓 `go test ./...` 与 `go test -race ./...` 绿（go 1.25 工具链）。
-9. [ ] 三仓 CI build job 产出 `linux-{amd64,arm64}.so` + `.sha256` + `.abi.json`，
+   三仓五字段一致：`abi-3e0c9d46…` / `sha256:e19c9657…`（ready 态 lock 哈希，
+   非签署态 `111ea6bb…`）/ `006436e3…` / runtime `sha256:53719b71…` / sdk `sha256:c5fadb57…`。
+7. [~] 三仓版本号三/五处一致（CI 元数据校验 job 绿）：`VERSION`/`compatibility.json`/
+   `node.go`( /producer.go)。RO `0.2.0`、IM `0.3.1` 的 `test` job 已在 CI 绿；
+   FF `0.5.2` 仅本地核过，未 push（见 12 的死锁）。
+8. [~] 三仓 `go test ./...` 与 `go test -race ./...` 绿（go 1.25 工具链）。
+   三仓本地 `-count=1` 全绿；CI `test` job RO/IM 绿。`-race` 本机 `requires cgo`
+   跑不了（PATH 无 gcc/clang），由 Linux CI 的 `-race` 覆盖。
+   RO 本机存在与本任务无关的 Windows `TempDir RemoveAll cleanup` flake
+   （base 全量跑同样随机红，失败集合每次变，零业务断言失败）。
+9. [~] 三仓 CI build job 产出 `linux-{amd64,arm64}.so` + `.sha256` + `.abi.json`，
    `sha256sum --check` 通过，`.abi.json` 的 `abi_id`/`lock_digest`/`platform`/
-   `plugin_sha256` 与 lock 一致。
-10. [ ] 每仓 smoke-load：在匹配 `-plugin` runtime 容器内，`/api/v1/components`
-    回读到本仓节点（`resourceOrigin` / `indexedMedia` / `ffmpegOverIp`+`ffmpegOverIpProducer`）
-    与 out 处理器（`resourceOriginResponse` / `ffmpegOverIpResponse`），日志无 ABI 错误。
+   `plugin_sha256` 与 lock 一致。RO（run `39810333396`、main `39811100101`）与
+   IM（PR #5 run `39813678234`）双架构 build job 已绿；FF 未跑。
+10. [~] 每仓 smoke-load：在匹配 `-plugin` runtime 容器内，`/api/v1/components`
+     回读到本仓节点（`resourceOrigin` / `indexedMedia` / `ffmpegOverIp`+`ffmpegOverIpProducer`）
+     与 out 处理器（`resourceOriginResponse` / `ffmpegOverIpResponse`），日志无 ABI 错误。
+     RO/IM 的 build job（含 `io.rulego.server.release == v1.0.0` 断言 + 容器回读）已绿；
+     FF 未跑。
 11. [ ] **共存验证**：同一 `-plugin` runtime 内同时加载三插件，`/api/v1/components`
-    回读到全部 5 个节点类型 + 2 个处理器，无 package-identity 冲突（`go version -m`
-    共享模块身份一致）。
+     回读到全部 5 个节点类型 + 2 个处理器，无 package-identity 冲突（`go version -m`
+     共享模块身份一致）。
 12. [ ] ffmpeg-over-ip CI 的 co-existence peer 已指向升级后的
-    `killbus/rulego-indexed-media <新tag>` 与 `killbus/rulego-resource-origin <新tag>`，
-    且该 CI 步绿（不再是旧 `indexed-vod v0.2.0`）。
+     `killbus/rulego-indexed-media <新tag>` 与 `killbus/rulego-resource-origin <新tag>`，
+     且该 CI 步绿（不再是旧 `indexed-vod v0.2.0`）。
+     **阻塞**：FF ⇄ IM 互指对方"已发布且 CI 全绿"的新 ABI 产物，而发布闸门
+     （`release.yml` 要求整条 CI run `CI:success`）又把共存步算进该判定 →
+     跨仓死锁。RO 无 peer 下载，可先走 G6。见
+     `research/coexistence-release-deadlock.md`。
 
 **C. 部署与运行时回读**
 13. [ ] 在匹配 runtime 部署：新 `.so` 落位插件目录、进程按主机机制重启/重载、
