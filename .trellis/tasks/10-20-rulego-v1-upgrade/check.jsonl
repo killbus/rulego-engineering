@@ -5,3 +5,5 @@
 {"file": ".trellis/spec/guides/rulego-delivery-workflow.md", "reason": "完成审计规范——把每个验收项映射到权威证据，区分 proving/contradicting/incomplete/indirect/missing"}
 {"file": ".trellis/spec/guides/rulego-ownership.md", "reason": "所有权边界——确认改动落在正确的 owning 仓库，未越界引用废弃仓或 WIP"}
 {"file": ".trellis/tasks/10-20-rulego-v1-upgrade/research/abi-byte-canonicalization.md", "reason": "check 需据此核验 abi_id/lock_digest 是否为 CI(LF) 口径、tr 归一化是否只在 CI 上为 no-op、本地绿是否被误当作 CI 证据"}
+{"file": ".trellis/tasks/10-20-rulego-v1-upgrade/research/coexistence-gate-verdict.md", "reason": "check 需核验实施未违反定案批准边界（未改 release.yml、未删断言、复现比对失败即红而非注解）"}
+{"file": ".trellis/tasks/10-20-rulego-v1-upgrade/research/coexistence-ownership-first-principles.md", "reason": "check 需核验 4.2 载体的共存证据覆盖三件真字节且 run id 与 G6 的 ci_run_id 同源，未把 CI 构造边当源码依赖"}

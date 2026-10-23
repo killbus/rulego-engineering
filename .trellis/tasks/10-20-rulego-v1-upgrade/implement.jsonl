@@ -5,3 +5,6 @@
 {"file": ".trellis/spec/guides/rulego-delivery-workflow.md", "reason": "交付工作流——commit 边界、验证放置（本地快检 vs CI 重活）、完成审计、跨仓委派纪律"}
 {"file": ".trellis/spec/guides/rulego-ownership.md", "reason": "仓库所有权与权威源——谁拥有 ABI lock/SDK/runtime/插件契约/部署状态；注意 indexed-vod→indexed-media 指针待 Phase 3.3 更新"}
 {"file": ".trellis/tasks/10-20-rulego-v1-upgrade/research/abi-byte-canonicalization.md", "reason": "abi_id/lock_digest 的 LF 字节口径实测取证与修复面、tests/run.sh 本地全绿证据、PR 触发与凭据事实；1.3/1.4/1.6/1.7 执行时的口径依据"}
+{"file": ".trellis/tasks/10-20-rulego-v1-upgrade/research/coexistence-release-deadlock.md", "reason": "共存 peer 钉死导致跨仓发布死锁的实测证据（旧 ABI sidecar 值）、死锁结构与三个解法；步骤 2 阻塞与 RO 可先行结论的出处"}
+{"file": ".trellis/tasks/10-20-rulego-v1-upgrade/research/coexistence-gate-verdict.md", "reason": "共存闸门五选项的圆桌定案与被否选项；实施期不得据新讨论单方重开，改动须对照本文件的批准边界"}
+{"file": ".trellis/tasks/10-20-rulego-v1-upgrade/research/coexistence-ownership-first-principles.md", "reason": "依赖边第一性核验（FF→IM 为 CI 构造非源码依赖）与成员证据/组成证据之分；步骤 4.2 作为唯一共存载体的依据"}

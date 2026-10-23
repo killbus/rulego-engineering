@@ -1,0 +1,30 @@
+{
+  "id": "im-ffmpeg-contract-decoupling",
+  "name": "im-ffmpeg-contract-decoupling",
+  "title": "IM→FF 契约解耦评估（mediaRunner 抽取 + 消费侧契约声明）",
+  "description": "评估把 rulego-indexed-media 对 rulego-ffmpeg-over-ip 的类型级 Go 依赖改为最小调用契约依赖，并补齐消费侧对端契约声明与断言；结论回写后再决定规范落地",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "killbus",
+  "assignee": "killbus",
+  "createdAt": "2026-10-23",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "description": "评估把 rulego-indexed-media 对 rulego-ffmpeg-over-ip 的类型级 Go 依赖改为最小调用契约依赖，并补齐消费侧对端契约声明与断言；结论回写后再决定规范落地",
+    "decision": "route C adopted 2026-10-23: consumer-side contract declaration + compiled-identity assertion in rulego-indexed-media; A1 rejected, A2 no-op, B deferred with observable triggers",
+    "next_action": "user approval to open the IM PR per implement.md (no gate changes)"
+  }
+}

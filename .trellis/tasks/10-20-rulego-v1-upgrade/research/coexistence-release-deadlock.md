@@ -1,5 +1,12 @@
 # Co-existence peer pinning blocks the new-ABI releases
 
+> Premise correction (2026-10-23), see
+> `coexistence-ownership-first-principles.md`: the "needs a released sibling"
+> rows below are properties of each `ci.yml`, not repository dependencies. Only
+> one real compile-time edge exists (`indexed-media` ->
+> `ffmpeg-over-ip/client`), and it points into `ffmpeg-over-ip`. The chosen
+> implementation is unchanged by that finding; read the cycle as CI placement.
+
 ## Symptom
 
 `rulego-indexed-media` PR #5 (`f3e64b7`, new v1.0.0 ABI sidecar) went red in
@@ -67,6 +74,24 @@ taking `resource-origin` as the reference point: no peer downloads, PR #4 CI
 green (`39810333396`), rebased main is `c6731ac`, main push CI green
 (`39811100101`). A `release.yml` dispatch with that run id satisfies both gate
 assertions today.
+
+## Executed: resource-origin v0.2.0 (dispatched 2026-10-23, readback 2026-10-24)
+
+The dispatch described above was performed: `release.yml` with
+`ci_run_id=39811100101`, tag `v0.2.0`, published 2026-10-23T00:38Z. Readback
+verified 2026-10-24 against the GitHub API (detail in
+`coexistence-ownership-first-principles.md`, "Verified by API"): the annotated
+tag points at the run head `c6731ac`; both `.so` sha256 values recomputed from
+the downloaded assets match the published `.sha256` files and the sidecar
+`plugin_sha256` fields; both sidecars carry the batch's new ABI
+(`abi-3e0c9d46…` / `sha256:e19c9657…`).
+
+Effect on the table above: `killbus/rulego-resource-origin v0.2.0` is now a
+citable new-ABI peer coordinate. The FF and IM jobs still download `v0.1.1`
+(`rulego-ffmpeg-over-ip/.github/workflows/ci.yml:195-197`,
+`rulego-indexed-media/.github/workflows/ci.yml:228-231`), so the RO leg of
+their "peers downloaded" cell is resolvable by a one-line pointer change; the
+FF ⇄ IM pair deadlock is unchanged.
 
 ## Options to break the cycle
 

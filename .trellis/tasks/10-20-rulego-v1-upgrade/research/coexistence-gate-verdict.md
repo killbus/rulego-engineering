@@ -51,6 +51,18 @@ semantics, which is not approved for this batch.
 
 ## Chosen implementation for this batch
 
+> Status note (2026-10-23): this section is a decision, written in the present
+> tense; the FF workflow still contains the two peer downloads and no sibling
+> source build (`rulego-ffmpeg-over-ip/.github/workflows/ci.yml:196-197`), and
+> `implement.md` step 2.4 is unchecked. Two further facts belong with it:
+> building `indexed-media` from its pinned commit registers `indexedMedia`, while
+> the smoke step at `ci.yml:294` asks for `indexedVod`, so the step cannot go
+> green until that string is migrated too. `indexedVod` is the pre-rename name of
+> the same component (`rulego-indexed-media/README.md:168-173`), so "no assertion
+> is removed" holds only literally - nothing is deleted, but one assertion's
+> operand changes identity, and its peer artifact changes with it. See
+> `coexistence-ownership-first-principles.md` for the residue inventory.
+
 `ffmpeg-over-ip` co-existence peers become three sources instead of two
 downloads:
 
@@ -96,3 +108,58 @@ the release notes would be the green light nobody reads.
 Revisit 5 when the three plugins need to move on independent schedules; that
 change should arrive together with branch protection and required status checks,
 which none of the three plugin repositories have today.
+
+## Second round (2026-10-24), after the first-principles correction
+
+`coexistence-ownership-first-principles.md` corrected the deadlock premise
+(the cross-repo "cycle" is CI placement, not source dependency) and left the
+location of the fleet-level assertion open. The table was reconvened with
+that fact on it. Deming, Kahneman and Conway answered; Perrow was not present.
+
+Converged:
+
+- Deming and Conway both moved their top pick to a new shape, 2'': the
+  co-existence job moves into the contract repo as the integration owner;
+  member gates keep only member evidence. Deming: composition evidence is
+  batch-shaped and had always been "wearing other repos' output as its own
+  test". Conway: integration assertions belong to the integration owner; no
+  single member repo ever had qualification to assert the three-piece
+  combination.
+- Both demoted the currently recorded three-source implementation to the
+  bottom of their rankings, for a reason round 1 did not contain: pinning an
+  unpublished sibling's `main` SHA into `ci.yml` is "pre-paying your release
+  for you" - social structure leaking into a pipeline constant, rots on PR
+  rebase (Conway), and it grows the gate on another repo's drift point, held
+  up by hand (Deming).
+- All three agree the steady state is the contract repo owning the set; the
+  disagreement is only over this batch's carrier. The table had never named which
+  repository "the contract repo" is: the candidate is
+  `killbus/rulego-server-docker` - it owns `plugin-abi.lock`, the five-field
+  contract every member embeds, and it publishes the `-plugin` runtime image
+  the co-existence evidence must load in. It has no `compatibility.json` of its
+  own and its release chain is image-only (`plugin-abi-publish.yml` /
+  `publish.yml`, verified 2026-10-24); it has never carried a plugin release.
+
+Not converged:
+
+- Kahneman holds 4 first (4 > 5 > 1 > 2+ > 2), having admitted the double
+  standard: he priced 4's alarm at its best day and 2's at its worst. His
+  conditions for 4: the sha assertion must actually run, and the two-arch
+  reproducibility cost belongs in 4's price. His flip condition: if the build
+  is not reproducible (Go version or CGO off by one byte), 4 falls below 1.
+- Deming: 2'' > 5 > 1 > three-source. Conway: 2'' > 5 > three-source > 1.
+  Conway's minimal step for 2'': contract repo declares the three-source
+  coordinates, the co-existence job moves in, the three member repos drop
+  their peer downloads and release individually green; the fixture is the
+  three artifacts loading in one process inside the contract repo.
+- The unverified premise now sits on both sides: 4 stands on "same inputs
+  imply same bytes"; 2'' stands on "the contract repo can enter the release
+  chain" - `release.yml` accepts only a run of its own repository, option 5's
+  old wall. Deming's test for 2'': its evidence is re-verifiable by reading
+  back the three releases, so try 2'' first.
+
+Decision state: two of the three R2 respondents rank 2'' first; the surviving
+objection to 2'' is factual (gate reachability), not framing. The recorded
+three-source implementation (option 4) remains this batch's plan until an
+explicit decision changes it; changing it is a release-gate change and needs
+approval.

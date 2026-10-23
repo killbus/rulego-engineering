@@ -129,8 +129,13 @@
      回读到全部 5 个节点类型 + 2 个处理器，无 package-identity 冲突（`go version -m`
      共享模块身份一致）。
 12. [ ] ffmpeg-over-ip CI 的 co-existence peer 已指向升级后的
-     `killbus/rulego-indexed-media <新tag>` 与 `killbus/rulego-resource-origin <新tag>`，
-     且该 CI 步绿（不再是旧 `indexed-vod v0.2.0`）。
+      `killbus/rulego-indexed-media <新tag>` 与 `killbus/rulego-resource-origin <新tag>`，
+      且该 CI 步绿（不再是旧 `indexed-vod v0.2.0`）。**同批完成条件**（原 AC 只列
+      peer 坐标，缺下面两项该步无变绿路径；详见 `implement.md` 2.4 与
+      `research/coexistence-ownership-first-principles.md`）：
+      peer 改指后 `ci.yml:294` 的 `.type == "indexedVod"` 必须同步为
+      `indexedMedia`（改名残留，非新增闸门），且 FF 的
+      `COMPATIBILITY.md:11,13,22` / `README.md:101` peer 名单同步更新。
      **阻塞**：FF ⇄ IM 互指对方"已发布且 CI 全绿"的新 ABI 产物，而发布闸门
      （`release.yml` 要求整条 CI run `CI:success`）又把共存步算进该判定 →
      跨仓死锁。RO 无 peer 下载，可先走 G6。见
@@ -143,8 +148,11 @@
     含 join/group/flow 的链按 v1.0.0 新语义行为符合预期（或按新语义调整并记录）。
 
 **D. 发布产物与元数据**
-15. [ ] 各插件 GitHub release 的 asset 带 `.sha256`，`sha256sum --check` 通过，
-    release tag 与 `VERSION` 一致（`--verify-tag`）。
+15. [~] 各插件 GitHub release 的 asset 带 `.sha256`，`sha256sum --check` 通过，
+    release tag 与 `VERSION` 一致（`--verify-tag`）。RO v0.2.0 已回读核验
+    （2026-10-24：tag→run head `c6731ac`、双架构 sha256 重算与 `.sha256` 文件
+    及 sidecar `plugin_sha256` 一致、sidecar 五字段为新 ABI）；IM/FF 待各自
+    G6 dispatch。
 16. [ ] GHCR 上 `-plugin` runtime/sdk 镜像 digest 与 `plugin-abi-release.json` 记录一致
     （`docker manifest inspect` 回读）。
 

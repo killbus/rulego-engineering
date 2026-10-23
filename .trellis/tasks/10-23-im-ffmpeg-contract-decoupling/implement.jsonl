@@ -1,0 +1,6 @@
+{"file": ".trellis/tasks/10-20-rulego-v1-upgrade/research/coexistence-ownership-first-principles.md", "reason": "共存边的第一性核验：哪条边是 CI 构造、哪条是真编译期依赖、成员证据 vs 组成证据之分。本任务的推荐结论不得与之矛盾"}
+{"file": ".trellis/tasks/10-20-rulego-v1-upgrade/research/coexistence-gate-verdict.md", "reason": "圆桌对共存闸门五选项的定案与未决项，划出本任务 Out of Scope 的边界（发布闸门/共存断言不改）"}
+{"file": ".trellis/spec/guides/rulego-capability-design.md", "reason": "放置测试（组合/能力/服务/展示四问）与状态归属判据——判定 IM 为何可以持有版本化客户端作实现依赖，以及适配器应依赖什么"}
+{"file": ".trellis/spec/guides/rulego-plugin-delivery.md", "reason": "成员证据 vs 组成证据之分（本会话新增节）与产物证据清单，含模块身份检查——消费侧契约声明要落在这份清单上"}
+{"file": ".trellis/spec/guides/rulego-ownership.md", "reason": "仓库边界与权威源判据（不得穿过他人私有实现）；注意其中 indexed-vod→indexed-media 指针待 Phase 3.3 更新"}
+

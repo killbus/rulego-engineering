@@ -1,0 +1,4 @@
+{"file": ".trellis/tasks/10-23-im-ffmpeg-contract-decoupling/prd.md", "reason": "check 需逐条对照 Acceptance Criteria 与 In Scope，确认依赖面清单无遗漏、三路线同组问题齐答、推荐带失效条件"}
+{"file": ".trellis/tasks/10-20-rulego-v1-upgrade/research/coexistence-ownership-first-principles.md", "reason": "check 需确认结论未与 CI 归属结论冲突，且未把 CI 构造边误当源码依赖"}
+{"file": ".trellis/spec/guides/rulego-plugin-delivery.md", "reason": "check 需确认新增的消费侧声明与断言形状符合成员/组成证据之分，不引入发布顺序耦合"}
+

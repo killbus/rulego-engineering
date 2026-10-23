@@ -191,12 +191,30 @@
   runtime `sha256:53719b71…` / sdk `sha256:c5fadb57…`。
 - [x] **2.3 已完成**：`VERSION`、`compatibility.json`（`pluginVersion=0.5.2` +
   `rulegoRelease=v1.0.0`）、`plugin/node.go`、`plugin/producer.go` 全部 0.5.1 → 0.5.2。
-- [ ] **2.4** 改 CI co-existence peer（`ci.yml:178-181` 一带）：
-  `killbus/rulego-indexed-vod v0.2.0` → `killbus/rulego-indexed-media <新tag>`
-  （artifact 名 `indexed-media-rulego-v<ver>-linux-{arch}.so`）；
-  `resource-origin v0.1.1` → `resource-origin <新tag>`。
-  **注意**：此步依赖 RO/IM 已按新 ABI 发布 release → 实际执行时序为
-  FF 先改 go.mod/ABI sidecar 提交（2.1-2.3），co-existence 步（2.4）在 RO/IM 发版后补跑 CI。
+- [ ] **2.4** 改 CI co-existence peer 与同批改名残留。**同批四组改动，缺一必红**：
+  1. `ci.yml:194-197` peer 坐标：`killbus/rulego-indexed-vod v0.2.0` →
+     `killbus/rulego-indexed-media <新tag>`（artifact 名
+     `indexed-media-rulego-v<ver>-linux-{arch}.so`）、
+     `resource-origin v0.1.1` → `resource-origin v0.2.0`。
+     （旧引用行号 `:178-181` 是 `download_release()` 函数体，坐标实际在 `:194-197`。）
+  2. `ci.yml:294` 节点类型字符串：`.nodes | any(.type == "indexedVod")` →
+     `indexedMedia`。这是 vod→media 改名（`rulego-indexed-media/README.md:168-173`：
+     无别名/无转发）留在 FF 仓的残留；IM 现注册的是 `indexedMedia`
+     （`rulego-indexed-media/node.go:23`），不改此行则共存 smoke 步要求一个
+     无人注册的节点类型，**没有任何变绿路径**。
+  3. `COMPATIBILITY.md:11,13,22`、`README.md:101`：面向用户的peer 名单，
+     今天会把人指去装已退役产物。
+  4. 若同批采用圆桌定案的三源形状（见
+     `research/coexistence-gate-verdict.md` 顶部状态注），未发布的兄弟改源码构建；
+     与本组改动正交，不互斥。
+  断言语义不变：`:294` 换的只是它点名的身份，原本要证的"第三件插件在本进程
+  注册"完整保留——属 AC12 已批准迁移的缺失另一半，不是新的闸门论证。
+  **注意**：本步依赖 RO/IM 已按新 ABI 发布 release → 实际时序为 FF 先改
+  go.mod/ABI sidecar 提交（2.1-2.3），共存步（2.4）在 RO/IM 发版后补跑 CI。
+  现状更新（2026-10-24）：`killbus/rulego-resource-origin v0.2.0` 已发布（run
+  `39811100101`，回读核验见 `research/coexistence-release-deadlock.md` "Executed"
+  节），FF `ci.yml:195-197` 与 IM `ci.yml:228-231` 的 RO leg（`v0.1.1`）可改为
+  `v0.2.0`；FF⇄IM 互指部分仍死锁，2.4 的 IM leg 仍须 4.2 载体或源码构建。
 - [x] **2.5 已完成**：`gofmt -l`（tracked `.go`，空）、根模块 `go vet ./...` +
   `go test -count=1 ./...`（`client` ok）、`GOWORK=off go -C plugin vet .` +
   `go -C plugin test -count=1 .`（ok）全绿。`go -C plugin list -m` 回读
@@ -209,7 +227,11 @@
 > **步骤 2 阻塞（结构性，非 bug）**：三仓 co-existence 互指 + `release.yml`
 > 要求"整条 CI run 全绿"，而 FF/IM 各自需要对方**已发布**的新 ABI 产物 →
 > 死锁。证据与三个解法见 `research/coexistence-release-deadlock.md`。
-> RO 无 peer 下载，是唯一可立即走 G6 发版的仓。
+> 圆桌定案见 `research/coexistence-gate-verdict.md`；其中"FF 需要 IM"这一
+> 前提的第一性核验见 `research/coexistence-ownership-first-principles.md`
+> （该边为 CI 构造，非源码依赖；定案实现不变）。
+> RO 无 peer 下载，是唯一可立即走 G6 发版的仓。**G6 部分完成（RO）**：
+  > `v0.2.0` 已发布并回读核验（2026-10-24），见 `research/coexistence-release-deadlock.md`。
 
 **回滚点 R2**：FF 改动为独立 commit，revert 即回到 v0.37.0 契约。
 
@@ -250,13 +272,24 @@
 ## 4. 跨仓集成验证（匹配运行时）
 
 - [ ] **4.1** 三仓 CI `build` job 全绿后，取得三组双架构 artifact（含 sidecar）。
-- [ ] **4.2** **共存验证**（关键）：在 `rulego-server:v1.0.0-plugin` runtime 容器内
-  同时安装三插件（`.so` 落 `/app/data/plugins` 或约定插件目录），重启，
-  `GET /api/v1/components` 回读 5 个节点类型
+- [ ] **4.2** **共存验证（本批共存命题的唯一必做载体，G6 前置）**：在
+  `rulego-server:v1.0.0-plugin` runtime 容器内同时安装三插件（`.so` 落
+  `/app/data/plugins` 或约定插件目录），重启，`GET /api/v1/components` 回读
+  5 个节点类型
   （`resourceOrigin`/`indexedMedia`/`ffmpegOverIp`/`ffmpegOverIpProducer`/…）
   + 2 个 out 处理器（`resourceOriginResponse`/`ffmpegOverIpResponse`），
   日志无 `plugin`/ABI 错误；`go version -m` 共享模块身份一致。
-  （FF 的 CI 内置双/三加载冒烟已覆盖大半；本步是部署侧独立确认。）
+  定位变更（原「FF 的 CI 冒烟已覆盖大半、本步只是部署侧独立确认」作废）：
+  集合断言不属成员闸门，见
+  `research/coexistence-ownership-first-principles.md`；因此本步不是补充而是
+  唯一载体，未做即不得走 G6 发版。
+  输入是 4.1 的三组 CI artifact（非 release asset）：本步自身**不要求任何已发布
+  兄弟**，它只要求三仓各自拿出可发版的绿色 run。今天 FF/IM 拿不出该 run，是因为
+  成员闸门里还挂着集合断言——那正是本条要移出的东西，不是本步的固有前置。
+  取 artifact 的 run id 须与该仓 G6 dispatch 的 `ci_run_id` 同一个
+  （`release.yml` 从该 run 下载 asset，字节同源），否则共存证据覆盖的不是出货
+  字节。运行侧证据性质：本步证"已下载字节在同进程注册"，属安装/组成证据，
+  不产出 ABI 身份断言（后者仍只在钉定 CI 环境成立）。
 - [ ] **4.3** **最小规则调用**：每插件一条最小输入→期望输出
   （如 resource-origin 发布一个资源并 GET 回读；indexed-media 对 fixture 源请求一段 range；
   ffmpeg-over-ip 起 pinned upstream 跑一次 invocation）。
@@ -265,7 +298,15 @@
 
 - [ ] **审批门禁 G6**：三仓 `release.yml` dispatch（各仓：`ci_run_id` + `tag`，
   tag 与 `VERSION` 一致）。release 只发 CI 已验证 artifact（不重建），`--verify-tag`。
-- [ ] **5.1** 发布后回读（`gh api`）：release 存在、asset 带 `.sha256`、
+  `ci_run_id` **有保质期**：run 元数据（`workflowName`/`conclusion`/`headSha` 两道
+  断言所读）不过期，但 artifact 自创建起 90 天后过期，届时 `release.yml` 会在
+  `download-artifact` 步响亮地红。过期处置 = `gh run rerun` 同一 run（同 headSha、
+  同钉死 SDK、artifact 重生、run 记录不变）后仍用**同一 run id** dispatch；
+  不得改用新 revision 重触发来"造新 artifact"（会移动发布修订、破合并点碎片化纪律）。
+  见 `.trellis/spec/guides/rulego-delivery-workflow.md`。
+- [~] **5.1 部分完成（RO）**：v0.2.0 回读通过（tag→`c6731ac`、双架构 sha256 与
+  sidecar `plugin_sha256` 一致、sidecar 五字段为新 ABI，2026-10-24 `gh api` +
+  资产重算）。IM/FF 待各自 dispatch。完整回读项（`gh api`）：release 存在、asset 带 `.sha256`、
   `sha256sum --check` 通过、artifact 名含正确平台/版本。
 - [ ] **5.2** GHCR 回读：`-plugin` runtime/sdk 镜像 digest 与 `plugin-abi-release.json`
   记录一致。
@@ -315,7 +356,7 @@
 | G3 | 合并后的 main 上 dispatch `plugin-abi-publish.yml` 发布 SDK/runtime 镜像 | **已批准并完成**（environment 无人工审批闸门，故批准 dispatch 即发布闸门） |
 | G4 | push `[FF]` master | 步骤 2.6 |
 | G5 | push `[RO]` main / `[IM]` main | 步骤 3.6 |
-| G6 | 三仓 `release.yml` dispatch 发布 | 步骤 5 |
+| G6 | 三仓 `release.yml` dispatch 发布 | 步骤 5（**RO 已完成**：v0.2.0，2026-10-24 回读核验） |
 | G7 | 部署变更（装 .so / 切 runtime / 重启） | 步骤 6 |
 
 ## 计划修改文件清单（按仓）
@@ -333,12 +374,26 @@
 **[IM] rulego-indexed-media**
 - `go.mod`、`go.sum`、`VERSION`、`compatibility.json`、`plugin-abi-release.json`、`node.go`
 - `.github/workflows/ci.yml`（e2e peer 引用升级后版本）
+  注：IM 的 peer 下载只被 `Hermetic selected-track TS and HLS seek` 消耗，而该
+  job 已同时装入三件（`tests/e2e-hls-seek.sh:156-158`）并断言全部节点类型注册
+  （`:189-199`）——它本身已是组成级载体，只是媒体路径经
+  `indexedMedia`/`resourceOrigin` 与独立 ffmpeg-over-ip server 容器走，链里
+  没有 `ffmpegOverIp` 节点。移出与否属另批批准，不单方改。
 
 **[FF] rulego-ffmpeg-over-ip**
 - `go.mod`、`go.sum`、`plugin/go.mod`、`plugin/go.sum`、`VERSION`、`compatibility.json`、
   `plugin-abi-release.json`、`plugin/node.go`、`plugin/producer.go`
 - `.github/workflows/ci.yml`（co-existence peer：indexed-vod v0.2.0 → indexed-media <新>；
   resource-origin v0.1.1 → <新>；client 版本/h1 hash 若发新 client）
+  注 1（改名残留，属 2.4 未列出的另一半）：`ci.yml:294` 的 `.nodes | any(.type ==
+  "indexedVod")` 与 `COMPATIBILITY.md:11,13,22`、`README.md:101` 是同一次
+  vod→media 改名（`rulego-indexed-media/README.md:168-173`：无别名/无转发）留在
+  FF 仓的残留字符串。peer 改指新产物时该字符串必须同批改为 `indexedMedia`，
+  否则 smoke 步要求一个无人注册的节点类型；只改字符串不改 peer 同样红。
+  这是 AC12（`prd.md:131-133`）已批准迁移的缺失部分，不是新的闸门论证。
+  注 2（归属）：这些 peer 行是否移出成员闸门，现由 4.2 与成员/组成证据之分决定；
+  移入组成载体属发布闸门改动，需显式批准（见
+  `research/coexistence-ownership-first-principles.md`）。
 
 **[ENG] rulego-engineering**
 - `.trellis/spec/guides/rulego-ownership.md`（indexed-vod → indexed-media 指针，Phase 3.3）
