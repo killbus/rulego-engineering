@@ -91,6 +91,23 @@ changes no behaviour; prove that by re-parsing the rewritten workflow and
 asserting the document is structurally identical to the original once the
 intended edits are reversed.
 
+A gated run id is perishable, and its two halves expire on different clocks. The
+gate assertions read run metadata; publication reads the uploaded artifacts,
+which expire on the platform's artifact retention window — read the configured
+window rather than assuming one, and record it beside the ids it governs. When
+the window passes, the gate assertions can still report success while
+publication fails at the artifact-download step. That loud failure is correct:
+an expired artifact is a real gap in what can be shipped.
+
+Treat that as an operational state with a named recovery, decided in advance:
+rerun the same run so the commit identity, pinned inputs and run record stay
+unchanged while the artifacts are regenerated, then dispatch publication with
+the same run id. Re-triggering verification on a new revision to manufacture a
+fresh artifact is not a substitute — it moves the publication revision and
+breaks the merge-point commit-consolidation gate. Record the perishable ids with
+their window where the next operator will read them, rather than discovering the
+expiry during a release.
+
 After pushing an authorized change:
 
 1. identify the exact remote commit;

@@ -40,11 +40,70 @@ Every released plugin artifact must have:
 - repository tests for the node contract;
 - a load-and-register check in the matching runtime;
 - architecture coverage for every advertised target;
-- coexistence checks with relevant plugins that are expected to load together.
+- a module-identity check that the artifact links the dependency versions the
+  repository declares.
+- when the plugin requires a peer service contract, a declaration of the
+  contract version it needs, asserted against a value compiled from that
+  dependency rather than retyped by hand.
 
-Coexistence is a separate requirement because Go plugins can share package
-identities even when node APIs are independent. A successful isolated load does
-not prove a multi-plugin host.
+Coexistence is not on this list. That requirement is real — Go plugins can share
+package identities even when node APIs are independent, and a successful
+isolated load does not prove a multi-plugin host — but it is a claim about a set
+of artifacts, not a property of one artifact, so no single artifact can carry it
+as evidence.
+
+## Member evidence versus composition evidence
+
+Keep these two kinds of proof apart, because mixing them couples repositories
+that are not coupled:
+
+- **Member evidence** asserts only properties of the artifact being published:
+  its own bytes against its own sidecar, its own registration in the matching
+  runtime, its own module identity against the versions its manifest declares.
+  It is order-independent, so any repository can be released first.
+- **Composition evidence** asserts that a named set of built artifacts loads in
+  one process on the matching runtime. It belongs to whoever can name the
+  expected set, and it runs after every member has a publishable run.
+
+Consequences that follow from that split:
+
+- A member gate must not download a sibling's published artifacts to prove
+  coexistence, and must not require a sibling's artifact bytes to equal values
+  in its own sidecar. That is a set assertion placed inside a member gate, and
+  an N-member set assertion repeated in every member gate requires N-1 already
+  published members, so no member can ever be first: a synchronized migration
+  of that fleet deadlocks by construction.
+- A compile-time dependency on a sibling module is satisfied by that sibling's
+  release tag through the module proxy. It never requires the sibling's
+  published binary artifacts, so a real source dependency creates no release
+  ordering constraint. Do not let a gate read a dependency as "sibling has
+  shipped".
+- A declaration and its proof each get exactly one home. If a version literal
+  appears in both the manifest and a gate assertion, every upgrade becomes two
+  edits that can drift apart; assert the manifest against the built artifact
+  instead of asserting the manifest against a literal.
+- A shared-package-identity check that compares two binaries belongs to the
+  composition carrier. The member-level equivalent costs the same and stays
+  order-independent: assert that the artifact links the dependency version and
+  hash the manifest declares.
+- Composition evidence consumes the artifacts of the runs the releases will
+  publish from, so the set proof covers the shipped bytes rather than a
+  separately built approximation. It is installation and composition evidence:
+  it does not produce ABI identity claims, which remain valid only in the pinned
+  CI environment.
+- Whoever removes a set assertion from member gates has to name the carrier that
+  proves the set instead. Otherwise the fleet ships with no coexistence proof at
+  all: the repositories whose gates happen to download siblings are the only
+  ones that ever verified it, and the repositories whose gates do not were
+  already unverified.
+
+The installation evidence below already asks for the set — "other required
+plugins still register in the same process" — so the carrier question is not
+new. What a batch adds is a schedule: if the deployment step is not run for
+every batch, the set needs a batch gate that runs whether or not anyone
+deploys.
+What a batch adds is a schedule: if the deployment step is not run for every
+batch, the set needs a batch gate that runs whether or not anyone deploys.
 
 ## CI and release flow
 
@@ -52,9 +111,12 @@ not prove a multi-plugin host.
 2. Build in the pinned SDK environment.
 3. Verify the artifact checksum and compatibility metadata.
 4. Start or inspect a matching runtime and prove component registration.
-5. Run relevant coexistence and architecture checks.
+5. Run architecture checks for every advertised target.
 6. Publish immutable artifacts and their evidence together.
 7. Read the release and workflow state back from the hosting platform.
+
+Composition evidence is a batch gate, not one of these per-repository steps. Run
+it once per batch against the member runs, before those runs feed a release.
 
 Keep expensive compilation, container builds, multi-architecture checks, and
 release gates in GitHub Actions. Local validation should remain lightweight
