@@ -191,30 +191,18 @@
   runtime `sha256:53719b71…` / sdk `sha256:c5fadb57…`。
 - [x] **2.3 已完成**：`VERSION`、`compatibility.json`（`pluginVersion=0.5.2` +
   `rulegoRelease=v1.0.0`）、`plugin/node.go`、`plugin/producer.go` 全部 0.5.1 → 0.5.2。
-- [ ] **2.4** 改 CI co-existence peer 与同批改名残留。**同批四组改动，缺一必红**：
-  1. `ci.yml:194-197` peer 坐标：`killbus/rulego-indexed-vod v0.2.0` →
-     `killbus/rulego-indexed-media <新tag>`（artifact 名
-     `indexed-media-rulego-v<ver>-linux-{arch}.so`）、
-     `resource-origin v0.1.1` → `resource-origin v0.2.0`。
-     （旧引用行号 `:178-181` 是 `download_release()` 函数体，坐标实际在 `:194-197`。）
-  2. `ci.yml:294` 节点类型字符串：`.nodes | any(.type == "indexedVod")` →
-     `indexedMedia`。这是 vod→media 改名（`rulego-indexed-media/README.md:168-173`：
-     无别名/无转发）留在 FF 仓的残留；IM 现注册的是 `indexedMedia`
-     （`rulego-indexed-media/node.go:23`），不改此行则共存 smoke 步要求一个
-     无人注册的节点类型，**没有任何变绿路径**。
-  3. `COMPATIBILITY.md:11,13,22`、`README.md:101`：面向用户的peer 名单，
-     今天会把人指去装已退役产物。
-  4. 若同批采用圆桌定案的三源形状（见
-     `research/coexistence-gate-verdict.md` 顶部状态注），未发布的兄弟改源码构建；
-     与本组改动正交，不互斥。
-  断言语义不变：`:294` 换的只是它点名的身份，原本要证的"第三件插件在本进程
-  注册"完整保留——属 AC12 已批准迁移的缺失另一半，不是新的闸门论证。
-  **注意**：本步依赖 RO/IM 已按新 ABI 发布 release → 实际时序为 FF 先改
-  go.mod/ABI sidecar 提交（2.1-2.3），共存步（2.4）在 RO/IM 发版后补跑 CI。
-  现状更新（2026-10-24）：`killbus/rulego-resource-origin v0.2.0` 已发布（run
-  `39811100101`，回读核验见 `research/coexistence-release-deadlock.md` "Executed"
-  节），FF `ci.yml:195-197` 与 IM `ci.yml:228-231` 的 RO leg（`v0.1.1`）可改为
-  `v0.2.0`；FF⇄IM 互指部分仍死锁，2.4 的 IM leg 仍须 4.2 载体或源码构建。
+- [x] **2.4 已完成（形态变更，用户 2026-10-24 批准"直接落地"）**：四组
+  "同批改名残留"方案**作废**，被成员闸门瘦身取代（FF commit `ce9b2bf`，本地，
+  G4 未 push）：`ci.yml` 删除 peer 下载步与跨成员 shared-identity 步，smoke 改
+  为单插件自证（`ffmpegOverIp`+`ffmpegOverIpProducer`+`ffmpegOverIpResponse`）；
+  新增 `Verify own module identity` 步保留成员级 client 身份钉定。集合断言
+  （三件共存 + 跨成员 shared-package）整体迁入 `killbus/rulego-fleet`（已
+  push，`7524ffe`），由 4.2 承载。`ci.yml:294` 的 `indexedVod` 字符串随整步
+  删除而消失（非改名迁移）；`COMPATIBILITY.md`/`README.md` 不再指向退役
+  `indexed-vod` peer，改指 rulego-fleet，并收口 v0.37.0→v1.0.0。原四组方案的
+  论证过程仍见 `research/coexistence-ownership-first-principles.md`（残留清单）
+  与 `research/coexistence-gate-verdict.md`（R1 定案 + R2 圆桌 + fleet 命名裁定）。
+  FF 闸门从此顺序无关：不再下载任何兄弟发布物。
 - [x] **2.5 已完成**：`gofmt -l`（tracked `.go`，空）、根模块 `go vet ./...` +
   `go test -count=1 ./...`（`client` ok）、`GOWORK=off go -C plugin vet .` +
   `go -C plugin test -count=1 .`（ok）全绿。`go -C plugin list -m` 回读
@@ -224,14 +212,16 @@
   （自 `origin/master 90ce79c`），commit `cd3f446`（9 文件 +16/−16）。
   **未 push**——G4 待批准，且 push 后 build job 会因 2.4 未做而红（见下）。
 
-> **步骤 2 阻塞（结构性，非 bug）**：三仓 co-existence 互指 + `release.yml`
-> 要求"整条 CI run 全绿"，而 FF/IM 各自需要对方**已发布**的新 ABI 产物 →
-> 死锁。证据与三个解法见 `research/coexistence-release-deadlock.md`。
-> 圆桌定案见 `research/coexistence-gate-verdict.md`；其中"FF 需要 IM"这一
-> 前提的第一性核验见 `research/coexistence-ownership-first-principles.md`
-> （该边为 CI 构造，非源码依赖；定案实现不变）。
-> RO 无 peer 下载，是唯一可立即走 G6 发版的仓。**G6 部分完成（RO）**：
-  > `v0.2.0` 已发布并回读核验（2026-10-24），见 `research/coexistence-release-deadlock.md`。
+> **步骤 2 阻塞已于 2026-10-24 结构性解除**：原死锁（FF/IM 成员闸门互指对方
+> 已发布产物 + `release.yml` 要求整条 CI 全绿）的成因是集合断言放在成员闸门
+> 里。成员闸门瘦身后（FF `ce9b2bf`，G4 未 push）FF 不再下载任何兄弟发布物，
+> 顺序无关；剩余顺序依赖是单向的（IM 的 e2e 指 FF release → FF 先发）。
+> 历史论证：`research/coexistence-release-deadlock.md`（死锁结构与解法）、
+> `research/coexistence-gate-verdict.md`（R1 定案 + R2 圆桌 + fleet 命名与
+> 职能裁定）、`research/coexistence-ownership-first-principles.md`（依赖边
+> 第一性核验 + 成员/组成证据之分）。
+> **G6 部分完成（RO）**：`v0.2.0` 已发布并回读核验（2026-10-24），见
+> `research/coexistence-release-deadlock.md` "Executed" 节。
 
 **回滚点 R2**：FF 改动为独立 commit，revert 即回到 v0.37.0 契约。
 

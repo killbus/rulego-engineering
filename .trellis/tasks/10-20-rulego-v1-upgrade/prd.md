@@ -128,18 +128,17 @@
 11. [ ] **共存验证**：同一 `-plugin` runtime 内同时加载三插件，`/api/v1/components`
      回读到全部 5 个节点类型 + 2 个处理器，无 package-identity 冲突（`go version -m`
      共享模块身份一致）。
-12. [ ] ffmpeg-over-ip CI 的 co-existence peer 已指向升级后的
-      `killbus/rulego-indexed-media <新tag>` 与 `killbus/rulego-resource-origin <新tag>`，
-      且该 CI 步绿（不再是旧 `indexed-vod v0.2.0`）。**同批完成条件**（原 AC 只列
-      peer 坐标，缺下面两项该步无变绿路径；详见 `implement.md` 2.4 与
-      `research/coexistence-ownership-first-principles.md`）：
-      peer 改指后 `ci.yml:294` 的 `.type == "indexedVod"` 必须同步为
-      `indexedMedia`（改名残留，非新增闸门），且 FF 的
-      `COMPATIBILITY.md:11,13,22` / `README.md:101` peer 名单同步更新。
-     **阻塞**：FF ⇄ IM 互指对方"已发布且 CI 全绿"的新 ABI 产物，而发布闸门
-     （`release.yml` 要求整条 CI run `CI:success`）又把共存步算进该判定 →
-     跨仓死锁。RO 无 peer 下载，可先走 G6。见
-     `research/coexistence-release-deadlock.md`。
+12. [~] ffmpeg-over-ip CI 不再引用任何退役名 `indexed-vod` 的 peer 发布物，
+      且其 build job 绿（成员证据：自身 sidecar + 自身注册 + 自身模块身份）。
+      实现形态已变更（2026-10-24 批准，FF 本地 `ce9b2bf`，G4 未 push）：原
+      "改 peer 坐标 + 改名 `ci.yml:294` + 文档"方案作废，改为成员闸门瘦身——
+      peer 下载步与跨成员 shared-identity 步删除，smoke 改单插件自证；
+      `COMPATIBILITY.md`/`README.md` 不再指向退役产物，改指 `rulego-fleet`。
+      共存断言整体迁入 `killbus/rulego-fleet`（AC11 / `implement.md` 4.2）。
+      原 FF⇄IM 互指死锁已结构性解除：FF 闸门不再下载任何兄弟发布物；剩余
+      顺序依赖是单向的（IM 的 e2e（3.4）要指 FF 的 release → FF 先发）。
+      见 `research/coexistence-release-deadlock.md`、
+      `research/coexistence-gate-verdict.md`。
 
 **C. 部署与运行时回读**
 13. [ ] 在匹配 runtime 部署：新 `.so` 落位插件目录、进程按主机机制重启/重载、

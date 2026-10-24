@@ -93,7 +93,14 @@ citable new-ABI peer coordinate. The FF and IM jobs still download `v0.1.1`
 their "peers downloaded" cell is resolvable by a one-line pointer change; the
 FF ⇄ IM pair deadlock is unchanged.
 
-## Options to break the cycle
+## Options to break the cycle (historical record)
+
+Resolved 2026-10-24 by a structural change rather than by any of the options
+below: the set assertion left the member gates entirely (FF `ce9b2bf`,
+local, not yet pushed) and moved to `killbus/rulego-fleet`, the dedicated
+composition owner. The cycle was a property of the placement, so moving the
+assertion removes it; the options below are kept as the historical decision
+record. See `coexistence-gate-verdict.md` (R2 + fleet ruling).
 
 1. **Shorten co-existence to two plugins for one migration run**
    (recommended). In `ffmpeg-over-ip`, temporarily drop the `indexed-media`

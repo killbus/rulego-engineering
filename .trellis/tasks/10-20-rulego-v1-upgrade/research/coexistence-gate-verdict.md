@@ -133,12 +133,15 @@ Converged:
   up by hand (Deming).
 - All three agree the steady state is the contract repo owning the set; the
   disagreement is only over this batch's carrier. The table had never named which
-  repository "the contract repo" is: the candidate is
-  `killbus/rulego-server-docker` - it owns `plugin-abi.lock`, the five-field
-  contract every member embeds, and it publishes the `-plugin` runtime image
-  the co-existence evidence must load in. It has no `compatibility.json` of its
-  own and its release chain is image-only (`plugin-abi-publish.yml` /
-  `publish.yml`, verified 2026-10-24); it has never carried a plugin release.
+  repository "the contract repo" is. The only candidate named -
+  `killbus/rulego-server-docker`, which owns `plugin-abi.lock` and publishes
+  the `-plugin` runtime image - was ruled out on 2026-10-24 (owner decision,
+  first principles): its scope is the ABI contract plus the runtime image;
+  hosting fleet composition there is a scope violation. The integration-owner
+  role is therefore unfilled by any existing repository: the choices are a
+  dedicated fleet/composition repo, or no standing owner at all (batch
+  verification stays in `implement.md` 4.2 and the set has no home between
+  batches).
 
 Not converged:
 
@@ -163,3 +166,41 @@ objection to 2'' is factual (gate reachability), not framing. The recorded
 three-source implementation (option 4) remains this batch's plan until an
 explicit decision changes it; changing it is a release-gate change and needs
 approval.
+  batch verification stays in `implement.md` 4.2 and the set has no home between
+  batches).
+
+Scope of that repo, confirmed by the owner 2026-10-24: it is the standing
+integration-test home for the whole RuleGo plugin ecosystem, not a one-off
+carrier for this batch. Its lanes: (a) batch re-verification after an ABI or
+version migration; (b) onboarding evidence when a new plugin joins the
+published set; (c) runtime-upgrade re-runs (same set, new runtime image
+digest) - a lane no member repo can cover. Out of scope: member release gates
+(no `release.yml` reads it), member unit gates, shipping-byte builds, the ABI
+contract itself (stays in `rulego-server-docker`). Its dependency direction is
+the standard one for an integration repo: it depends on every published
+member; the forbidden reverse direction (a member gate depending on it) is
+exactly what the member/composition split removes. Repo creation itself is
+executed 2026-10-24: `killbus/rulego-fleet` exists, root-level
+`manifest.json` (single manifest = the current composition; history is git
+history, lock-file model - matching the ecosystem's own per-repo
+`plugin-abi-release.json`) plus one `fleet.yml` verification workflow. The
+10-20 plan stays on the recorded three-source implementation until a
+decision is made on whether this batch's 4.2 evidence comes from a fleet run
+and in what order relative to the member G6 dispatches (fleet-after vs
+fleet-before).
+
+Naming (2026-10-24): the name must encode scope = the whole ecosystem's set
+(not "plugin" - the manifest carries runtime image and ABI coordinates from
+day one) and role = declares and verifies the set ships together (not builds,
+not releases). `rulego-fleet`: fleet is the set-of-units-that-run-together
+noun already in use in these documents; carries no plugin snapshot, no
+"tests" suffix (the manifest declaration is a first-class artifact, not
+disposable test code). Rejected: `rulego-composition` (reads as the composed
+distribution = option 5's shape, the thing this repo must not be),
+`rulego-system` (collides with "RuleGo = core + server"), `rulego-compat`
+(narrows to lane c, collides with `compatibility.json`),
+`rulego-fleet-tests` (suffix demotes the manifest), `rulego-eco` /
+`rulego-shipyard` (no functional noun / evokes building and launching).
+`rulego-integration` is the runner-up: accurate but empty - a process word
+for an artifact owner, drifts into a misc bin. All candidates verified
+available under `killbus` on 2026-10-24.
