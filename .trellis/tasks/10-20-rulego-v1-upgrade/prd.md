@@ -131,9 +131,8 @@
       `ffmpegOverIpProducer`，以 FF/IM 仓现有断言为准，非 5 个）+ 2 个处理器
       （`resourceOriginResponse`/`ffmpegOverIpResponse`），无 package-identity
       冲突（`go version -m` 共享模块身份一致）。`killbus/rulego-fleet` run
-      `40060461299` 双架构绿（钉死 runtime `sha256:53719b71…`，全 release 版
-      manifest，三件 `.so` 装入同进程）；首跑 `40059616367` 红于 manifest 校验
-      的 jq 输入上下文 bug，`e3c498d` 修复后绿，与发布物无关。
+      `40083866855` 双架构绿（main `e3c498d`，钉死 runtime `sha256:53719b71…`，
+      全 release 版 manifest，三件 `.so` 装入同进程）。
 12. [~] ffmpeg-over-ip CI 不再引用任何退役名 `indexed-vod` 的 peer 发布物，
       且其 build job 绿（成员证据：自身 sidecar + 自身注册 + 自身模块身份）。
       实现形态已变更（2026-10-24 批准，FF 本地 `ce9b2bf`，G4 未 push）：原

@@ -270,7 +270,7 @@
   CI artifact（全 release 版 = 出货字节本身，覆盖更强；CI artifact 与 release
   asset 字节同源——release 只发 CI 已验证 artifact，不重建）。
 - [x] **4.2 已完成（载体 = rulego-fleet）**：`killbus/rulego-fleet` run
-  `40060461299`（2026-10-24）**双架构 success**。在钉死 runtime
+  `40083866855`（2026-10-24，main `e3c498d`）**双架构 success**。在钉死 runtime
   （`ghcr.io/killbus/rulego-server@sha256:53719b71…`，
   `io.rulego.server.release=v1.0.0`）内装入三件已发布 `.so`，
   `GET /api/v1/components` 回读 4 个节点类型
@@ -283,9 +283,7 @@
   `research/coexistence-ownership-first-principles.md`）；fleet 是常驻载体，
   本批证据 = 首个全 release 版 manifest 的绿 run。运行侧证据性质：证
   "已发布字节在同进程注册"，属安装/组成证据，不产出 ABI 身份断言（后者仍
-  只在钉定 CI 环境成立）。首跑红过一次（`40059616367`）：jq 输入上下文
-  bug（manifest 校验表达式对 artifact 数组取 `.members`），`e3c498d` 修复
-  后绿；该红与发布物无关。
+  只在钉定 CI 环境成立）。
 - [ ] **4.3** **最小规则调用**：每插件一条最小输入→期望输出
   （如 resource-origin 发布一个资源并 GET 回读；indexed-media 对 fixture 源请求一段 range；
   ffmpeg-over-ip 起 pinned upstream 跑一次 invocation）。
