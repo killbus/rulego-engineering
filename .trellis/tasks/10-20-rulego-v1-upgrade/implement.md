@@ -7,10 +7,11 @@
 
 ## 0. 前置检查（start 后、动手前）
 
-- [ ] 复核六仓状态与 design.md §5 保护表一致（只读 `git status -sb` / `rev-parse HEAD`）：
+- [x] 复核六仓状态与 design.md §5 保护表一致（只读 `git status -sb` / `rev-parse HEAD`）：
   - `[ENG]` main@138eee7 ahead 2；`[RO]` main@fc0d15a；`[IM]` main@4f30239；
     `[FF]` master@76e8c0e；`[SD]` main@a498c9e + 11 项未跟踪 WIP。
-- [ ] 复核上游 v1.0.0 release 资产可用（`gh api repos/rulego/rulego/releases/tags/v1.0.0`）。
+- [x] 复核上游 v1.0.0 release 资产可用（`gh api repos/rulego/rulego/releases/tags/v1.0.0`，
+  1.x 步实测资产 digest 并落档）。
 - [x] **审批门禁 G1 已通过**：采用 design.md §D3 版本号方案；ffmpeg-over-ip client
   源码不变并继续沿用 `v0.5.0`；RuleGo 依赖统一使用正式 tag `v1.0.0`；
   co-existence peer 迁移到新版 indexed-media/resource-origin；server-docker 未跟踪 WIP 排除。
@@ -291,7 +292,7 @@
 
 ## 5. 发布
 
-- [ ] **审批门禁 G6**：三仓 `release.yml` dispatch（各仓：`ci_run_id` + `tag`，
+- [x] **审批门禁 G6 已完成（三仓）**：`release.yml` dispatch（各仓：`ci_run_id` + `tag`，RO=run `39811100101`/`v0.2.0`、FF=run `40055386317`/`v0.5.2`、IM=run `40058007544`/`v0.3.1`，2026-10-24 均用户逐项批准）。
   tag 与 `VERSION` 一致）。release 只发 CI 已验证 artifact（不重建），`--verify-tag`。
   `ci_run_id` **有保质期**：run 元数据（`workflowName`/`conclusion`/`headSha` 两道
   断言所读）不过期，但 artifact 自创建起 90 天后过期，届时 `release.yml` 会在
@@ -303,7 +304,7 @@
   sidecar `plugin_sha256` 一致、sidecar 五字段为新 ABI，2026-10-24 `gh api` +
   资产重算）。IM/FF 待各自 dispatch。完整回读项（`gh api`）：release 存在、asset 带 `.sha256`、
   `sha256sum --check` 通过、artifact 名含正确平台/版本。
-- [ ] **5.2** GHCR 回读：`-plugin` runtime/sdk 镜像 digest 与 `plugin-abi-release.json`
+- [x] **5.2 已完成（G3 时点）**：GHCR 回读（`ghcr.io/killbus/rulego-server:v1.0.0-plugin` = `sha256:53719b71…`、`ghcr.io/killbus/rulego-plugin-sdk:abi-3e0c9d46…` = `sha256:c5fadb57…`，`Docker-Content-Digest` 逐条比对，见 `research/g3-abi-publish.md`）与三仓 `plugin-abi-release.json` 记录一致
   记录一致。
 
 ## 6. 部署与运行时回读

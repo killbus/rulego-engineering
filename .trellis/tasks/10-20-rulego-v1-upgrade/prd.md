@@ -160,12 +160,15 @@
     文件 = sidecar `plugin_sha256`，sidecar 五字段为新 ABI。FF 侧注：首次
     dispatch 成功（run `40055871422`），误发的重复 run `40055934172` 红于
     `release already exists`，发布物无损（教训：dispatch 前先查 runs 列表）。
-16. [ ] GHCR 上 `-plugin` runtime/sdk 镜像 digest 与 `plugin-abi-release.json` 记录一致
-    （`docker manifest inspect` 回读）。
+16. [x] GHCR 上 `-plugin` runtime/sdk 镜像 digest 与 `plugin-abi-release.json` 记录一致
+    （G3 时点 `Docker-Content-Digest` 逐条比对：runtime `v1.0.0-plugin` =
+    `sha256:53719b71…`、sdk `abi-3e0c9d46…` = `sha256:c5fadb57…`，见
+    `research/g3-abi-publish.md`；三仓 release 的 sidecar 同引该两 digest）。
 
 **E. 规范一致性**
-17. [ ] `rulego-engineering` 的 ownership 指南中 `rulego-indexed-vod` 指针更新为
-    `rulego-indexed-media`（Phase 3.3）。
+17. [x] `rulego-engineering` 的 ownership 指南中 `rulego-indexed-vod` 指针更新为
+    `rulego-indexed-media`（Phase 3.3，`rulego-ownership.md` 行内注明 v0.3.0 改名
+    与无别名/无转发）。
 
 ## 事实 / 推断 / 待确认（区分）
 
