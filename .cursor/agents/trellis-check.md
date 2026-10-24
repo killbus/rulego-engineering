@@ -67,6 +67,8 @@ Read the task's prd.md, design.md if present, and implement.md if present, then 
 - Does it follow code patterns
 - Are there missing types
 - Are there potential bugs
+- Are all changed paths in the repository and layer that owns their content, per `.trellis/spec/guides/commit-gate.md` (path ownership, negative list, coherence)
+- When a commit message is part of what you are reviewing, is it English, one line, present tense, and positively phrased (commit gate: Message)
 
 ### Step 3: Self-Fix
 

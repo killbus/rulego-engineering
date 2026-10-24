@@ -11,6 +11,7 @@ work to the appropriate normative guide and external source of truth.
 | [Ownership and authority](./rulego-ownership.md) | Repository, runtime, and consumer ownership |
 | [Capability design](./rulego-capability-design.md) | Graph, plugin, service, and consumer placement |
 | [Plugin delivery](./rulego-plugin-delivery.md) | Go plugin ABI, build, release, and installation evidence |
+| [Commit gate](./commit-gate.md) | Path ownership and merge-point checks for every commit |
 | [Runtime verification](./rulego-runtime-verification.md) | Rule-chain deployment and end-to-end checks |
 | [Delivery workflow](./rulego-delivery-workflow.md) | Goal, review, commit, CI, and completion practice |
 

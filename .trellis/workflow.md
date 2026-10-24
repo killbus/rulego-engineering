@@ -590,6 +590,8 @@ Update the docs under `.trellis/spec/` accordingly. Even if the conclusion is "n
 
 **Spec-sync preamble**: before drafting commits, ask: did this task fix a bug or surface non-obvious knowledge that should land in `.trellis/spec/` so future-you (or future-AI) doesn't repeat the mistake? If yes, return to Phase 3.3 first — spec writes belong in the same task's commit batch, not as a forgotten follow-up.
 
+**Commit-gate preamble**: before drafting commits, run the staged set through the [commit gate](spec/guides/commit-gate.md): path ownership for every staged file (content placed where its first-principles owner does not belong is a gate failure, regardless of text quality), the negative list, and coherence. Move or drop violating paths first; only then draft the plan.
+
 The AI drives a batched commit of this task's code changes so `/finish-work` can run cleanly afterwards. Goal: produce work commits FIRST, then bookkeeping (archive + journal) commits land after — never interleaved.
 
 **Step-by-step**:
@@ -604,7 +606,7 @@ The AI drives a batched commit of this task's code changes so `/finish-work` can
    ```bash
    git log --oneline -5
    ```
-   Note the prefix convention (`feat:` / `fix:` / `chore:` / `docs:` ...), language (中文/English), and length style.
+   Note the prefix convention (`feat:` / `fix:` / `chore:` / `docs:` ...) and length style. Message language and phrasing come from the [commit gate](spec/guides/commit-gate.md), Message section — English and positive, even when history is older-style — history informs shape, not these two.
 
 3. **Classify dirty files into two groups**:
    - **AI-edited this session** — files you wrote/edited via Edit/Write/Bash tool calls in this session. You know what changed and why.
