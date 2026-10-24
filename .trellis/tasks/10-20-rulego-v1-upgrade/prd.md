@@ -109,8 +109,8 @@
    三仓五字段一致：`abi-3e0c9d46…` / `sha256:e19c9657…`（ready 态 lock 哈希，
    非签署态 `111ea6bb…`）/ `006436e3…` / runtime `sha256:53719b71…` / sdk `sha256:c5fadb57…`。
 7. [~] 三仓版本号三/五处一致（CI 元数据校验 job 绿）：`VERSION`/`compatibility.json`/
-   `node.go`( /producer.go)。RO `0.2.0`、IM `0.3.1` 的 `test` job 已在 CI 绿；
-   FF `0.5.2` 仅本地核过，未 push（见 12 的死锁）。
+    `node.go`( /producer.go)。RO `0.2.0`、IM `0.3.1` 的 `test` job 已在 CI 绿；
+    FF `0.5.2` 已合并（master `956ed85`，PR #2 CI 绿）并发布（G6 完成）。
 8. [~] 三仓 `go test ./...` 与 `go test -race ./...` 绿（go 1.25 工具链）。
    三仓本地 `-count=1` 全绿；CI `test` job RO/IM 绿。`-race` 本机 `requires cgo`
    跑不了（PATH 无 gcc/clang），由 Linux CI 的 `-race` 覆盖。
@@ -118,16 +118,21 @@
    （base 全量跑同样随机红，失败集合每次变，零业务断言失败）。
 9. [~] 三仓 CI build job 产出 `linux-{amd64,arm64}.so` + `.sha256` + `.abi.json`，
    `sha256sum --check` 通过，`.abi.json` 的 `abi_id`/`lock_digest`/`platform`/
-   `plugin_sha256` 与 lock 一致。RO（run `39810333396`、main `39811100101`）与
-   IM（PR #5 run `39813678234`）双架构 build job 已绿；FF 未跑。
+    `plugin_sha256` 与 lock 一致。RO（run `39810333396`、main `39811100101`）与
+    IM（PR #5 run `39813678234`）双架构 build job 已绿；FF 已发布（master run
+    `40055386317`），5.1 回读通过（tag→`956ed85`、sha256 重算一致、sidecar 新 ABI）。
 10. [~] 每仓 smoke-load：在匹配 `-plugin` runtime 容器内，`/api/v1/components`
      回读到本仓节点（`resourceOrigin` / `indexedMedia` / `ffmpegOverIp`+`ffmpegOverIpProducer`）
      与 out 处理器（`resourceOriginResponse` / `ffmpegOverIpResponse`），日志无 ABI 错误。
-     RO/IM 的 build job（含 `io.rulego.server.release == v1.0.0` 断言 + 容器回读）已绿；
-     FF 未跑。
+      RO/IM 的 build job（含 `io.rulego.server.release == v1.0.0` 断言 + 容器回读）已绿；
+      FF 已绿（瘦身后的单插件自证 smoke，master run `40055386317`）。
 11. [ ] **共存验证**：同一 `-plugin` runtime 内同时加载三插件，`/api/v1/components`
-     回读到全部 5 个节点类型 + 2 个处理器，无 package-identity 冲突（`go version -m`
-     共享模块身份一致）。
+      回读到全部 4 个节点类型（`resourceOrigin`/`indexedMedia`/`ffmpegOverIp`/
+      `ffmpegOverIpProducer`，以 FF/IM 仓现有断言为准，非 5 个）+ 2 个处理器
+      （`resourceOriginResponse`/`ffmpegOverIpResponse`），无 package-identity
+      冲突（`go version -m` 共享模块身份一致）。载体已确定为
+      `killbus/rulego-fleet`（成员闸门瘦身后的常驻组合 owner）；本批证据 =
+      三仓全部 `source: release` 后的 fleet run（`implement.md` 4.2）。
 12. [~] ffmpeg-over-ip CI 不再引用任何退役名 `indexed-vod` 的 peer 发布物，
       且其 build job 绿（成员证据：自身 sidecar + 自身注册 + 自身模块身份）。
       实现形态已变更（2026-10-24 批准，FF 本地 `ce9b2bf`，G4 未 push）：原

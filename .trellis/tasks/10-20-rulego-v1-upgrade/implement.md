@@ -296,7 +296,7 @@
   同钉死 SDK、artifact 重生、run 记录不变）后仍用**同一 run id** dispatch；
   不得改用新 revision 重触发来"造新 artifact"（会移动发布修订、破合并点碎片化纪律）。
   见 `.trellis/spec/guides/rulego-delivery-workflow.md`。
-- [~] **5.1 部分完成（RO）**：v0.2.0 回读通过（tag→`c6731ac`、双架构 sha256 与
+- [~] **5.1 部分完成（RO + FF）**：RO v0.2.0 回读通过（tag→`c6731ac`、双架构 sha256 与
   sidecar `plugin_sha256` 一致、sidecar 五字段为新 ABI，2026-10-24 `gh api` +
   资产重算）。IM/FF 待各自 dispatch。完整回读项（`gh api`）：release 存在、asset 带 `.sha256`、
   `sha256sum --check` 通过、artifact 名含正确平台/版本。
@@ -348,7 +348,7 @@
 | G3 | 合并后的 main 上 dispatch `plugin-abi-publish.yml` 发布 SDK/runtime 镜像 | **已批准并完成**（environment 无人工审批闸门，故批准 dispatch 即发布闸门） |
 | G4 | push `[FF]` master | 步骤 2.6（**已批准并完成**：PR #2 rebase 合并，master `956ed85` 自证绿 `40055386317`） |
 | G5 | push `[RO]` main / `[IM]` main | 步骤 3.6 |
-| G6 | 三仓 `release.yml` dispatch 发布 | 步骤 5（**RO 已完成**：v0.2.0，2026-10-24 回读核验） |
+| G6 | 三仓 `release.yml` dispatch 发布 | 步骤 5（**RO 已完成**：v0.2.0；**FF 已完成**：v0.5.2，2026-10-24 回读核验） |
 | G7 | 部署变更（装 .so / 切 runtime / 重启） | 步骤 6 |
 
 ## 计划修改文件清单（按仓）
