@@ -284,7 +284,8 @@
   本批证据 = 首个全 release 版 manifest 的绿 run。运行侧证据性质：证
   "已发布字节在同进程注册"，属安装/组成证据，不产出 ABI 身份断言（后者仍
   只在钉定 CI 环境成立）。
-- [ ] **4.3** **最小规则调用**：每插件一条最小输入→期望输出
+- [~] **4.3 [out-of-scope，用户裁定 2026-10-24]** **最小规则调用**：每插件一条
+  最小输入→期望输出（部署侧验证，不属本任务范围；AC13 随 6.x 移交部署方）
   （如 resource-origin 发布一个资源并 GET 回读；indexed-media 对 fixture 源请求一段 range；
   ffmpeg-over-ip 起 pinned upstream 跑一次 invocation）。
 
@@ -307,23 +308,27 @@
 
 ## 6. 部署与运行时回读
 
-- [ ] **6.1** 目标部署装新 `.so`（校验和匹配 release 记录）、runtime 切
+本节整体 [out-of-scope，用户裁定 2026-10-24]：目标部署环境不属本任务范围，
+4.3/6.1-6.4 与 AC13/14 移交部署方在装三件新 `.so` 时验证（坐标与 sha256 见
+5.1 回读记录与 research/g3-abi-publish.md）。
+
+- [~] **6.1** 目标部署装新 `.so`（校验和匹配 release 记录）、runtime 切
   `rulego-server:v1.0.0-plugin`（或按部署机制重启/重载）。
-- [ ] **6.2** 注册回读：组件注册表含全部预期节点/处理器。
-- [ ] **6.3** **既有规则链回读**（v1.0.0 语义）：经 API 读回全部已部署链，
+- [~] **6.2** 注册回读：组件注册表含全部预期节点/处理器。
+- [~] **6.3** **既有规则链回读**（v1.0.0 语义）：经 API 读回全部已部署链，
   比对节点类型/引用/endpoint/enabled 语义；**重点**验证含 join/group/flow/ssh 的链
   （v1.0.0 join 语义重做、flow 跨链、ssh `certKeyFile` 字段合并）。
   行为异常 → 记录，按 v1.0.0 语义调整链配置（规则侧，非插件侧）。
-- [ ] **6.4** 端到端最小验证：对既有对外路由发最小已知输入，检查状态/头/体/流。
+- [~] **6.4** 端到端最小验证：对既有对外路由发最小已知输入，检查状态/头/体/流。
 
 ## 7. 收尾
 
-- [ ] **[ENG]** Phase 3.3 spec 更新：`rulego-ownership.md` 中
+- [x] **[ENG]** Phase 3.3 spec 更新：`rulego-ownership.md` 中
   `rulego-indexed-vod` 权威指针 → `rulego-indexed-media`；
   若发现新的稳定实践（如"插件 go.mod 必须 pin 正式 tag 以对齐 compatibility.json"）
   写入 `rulego-plugin-delivery.md`。
-- [ ] **[ENG]** 本任务 research/ 补充实施期实测证据（ABI 重签日志、共存回读、发布 digest）。
-- [ ] 按 Phase 3.4 提交（work commits 先行；排除非本任务脏文件：
+- [x] **[ENG]** 本任务 research/ 补充实施期实测证据（ABI 重签日志、共存回读、发布 digest）。
+- [x] 按 Phase 3.4 提交（work commits 先行；排除非本任务脏文件：
   `[ENG]` 的 `rulego-capability-design.md` 改动与 `09-11-indexed-audio` 未跟踪文件
   **不属于本任务**，单独确认）。
 - [ ] 提醒用户 `/trellis:finish-work`。
