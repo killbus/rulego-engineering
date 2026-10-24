@@ -263,25 +263,28 @@
 
 ## 4. 跨仓集成验证（匹配运行时）
 
-- [ ] **4.1** 三仓 CI `build` job 全绿后，取得三组双架构 artifact（含 sidecar）。
-- [ ] **4.2** **共存验证（本批共存命题的唯一必做载体，G6 前置）**：在
-  `rulego-server:v1.0.0-plugin` runtime 容器内同时安装三插件（`.so` 落
-  `/app/data/plugins` 或约定插件目录），重启，`GET /api/v1/components` 回读
-  5 个节点类型
-  （`resourceOrigin`/`indexedMedia`/`ffmpegOverIp`/`ffmpegOverIpProducer`/…）
-  + 2 个 out 处理器（`resourceOriginResponse`/`ffmpegOverIpResponse`），
-  日志无 `plugin`/ABI 错误；`go version -m` 共享模块身份一致。
-  定位变更（原「FF 的 CI 冒烟已覆盖大半、本步只是部署侧独立确认」作废）：
-  集合断言不属成员闸门，见
-  `research/coexistence-ownership-first-principles.md`；因此本步不是补充而是
-  唯一载体，未做即不得走 G6 发版。
-  输入是 4.1 的三组 CI artifact（非 release asset）：本步自身**不要求任何已发布
-  兄弟**，它只要求三仓各自拿出可发版的绿色 run。今天 FF/IM 拿不出该 run，是因为
-  成员闸门里还挂着集合断言——那正是本条要移出的东西，不是本步的固有前置。
-  取 artifact 的 run id 须与该仓 G6 dispatch 的 `ci_run_id` 同一个
-  （`release.yml` 从该 run 下载 asset，字节同源），否则共存证据覆盖的不是出货
-  字节。运行侧证据性质：本步证"已下载字节在同进程注册"，属安装/组成证据，
-  不产出 ABI 身份断言（后者仍只在钉定 CI 环境成立）。
+- [x] **4.1 已完成**：三仓 CI `build` job 全绿并各自发布（RO v0.2.0 / IM
+  v0.3.1 / FF v0.5.2），双架构 artifact 经 5.1 回读（sha256 重算 = `.sha256`
+  = sidecar `plugin_sha256`）。形态说明：fleet 载体取**已发布 release** 而非
+  CI artifact（全 release 版 = 出货字节本身，覆盖更强；CI artifact 与 release
+  asset 字节同源——release 只发 CI 已验证 artifact，不重建）。
+- [x] **4.2 已完成（载体 = rulego-fleet）**：`killbus/rulego-fleet` run
+  `40060461299`（2026-10-24）**双架构 success**。在钉死 runtime
+  （`ghcr.io/killbus/rulego-server@sha256:53719b71…`，
+  `io.rulego.server.release=v1.0.0`）内装入三件已发布 `.so`，
+  `GET /api/v1/components` 回读 4 个节点类型
+  （`resourceOrigin`/`indexedMedia`/`ffmpegOverIp`/`ffmpegOverIpProducer`，
+  以 FF/IM 仓现有断言为准，非 5 个）+ 2 个 out 处理器
+  （`resourceOriginResponse`/`ffmpegOverIpResponse`），启动日志无
+  `plugin`/ABI 错误；`go version -m` 对共享包
+  `github.com/killbus/rulego-ffmpeg-over-ip` 的 `dep` 行跨三件逐字节相等。
+  定位：集合断言不属成员闸门（见
+  `research/coexistence-ownership-first-principles.md`）；fleet 是常驻载体，
+  本批证据 = 首个全 release 版 manifest 的绿 run。运行侧证据性质：证
+  "已发布字节在同进程注册"，属安装/组成证据，不产出 ABI 身份断言（后者仍
+  只在钉定 CI 环境成立）。首跑红过一次（`40059616367`）：jq 输入上下文
+  bug（manifest 校验表达式对 artifact 数组取 `.members`），`e3c498d` 修复
+  后绿；该红与发布物无关。
 - [ ] **4.3** **最小规则调用**：每插件一条最小输入→期望输出
   （如 resource-origin 发布一个资源并 GET 回读；indexed-media 对 fixture 源请求一段 range；
   ffmpeg-over-ip 起 pinned upstream 跑一次 invocation）。
@@ -296,7 +299,7 @@
   同钉死 SDK、artifact 重生、run 记录不变）后仍用**同一 run id** dispatch；
   不得改用新 revision 重触发来"造新 artifact"（会移动发布修订、破合并点碎片化纪律）。
   见 `.trellis/spec/guides/rulego-delivery-workflow.md`。
-- [~] **5.1 部分完成（RO + FF）**：RO v0.2.0 回读通过（tag→`c6731ac`、双架构 sha256 与
+- [x] **5.1 已完成（RO + FF + IM）**：三 release 回读通过（RO v0.2.0 tag→`c6731ac`、FF v0.5.2 tag→`956ed85`、IM v0.3.1 tag→`d6786a5`；双架构 sha256 与：RO v0.2.0 回读通过（tag→`c6731ac`、双架构 sha256 与
   sidecar `plugin_sha256` 一致、sidecar 五字段为新 ABI，2026-10-24 `gh api` +
   资产重算）。IM/FF 待各自 dispatch。完整回读项（`gh api`）：release 存在、asset 带 `.sha256`、
   `sha256sum --check` 通过、artifact 名含正确平台/版本。
@@ -348,7 +351,7 @@
 | G3 | 合并后的 main 上 dispatch `plugin-abi-publish.yml` 发布 SDK/runtime 镜像 | **已批准并完成**（environment 无人工审批闸门，故批准 dispatch 即发布闸门） |
 | G4 | push `[FF]` master | 步骤 2.6（**已批准并完成**：PR #2 rebase 合并，master `956ed85` 自证绿 `40055386317`） |
 | G5 | push `[RO]` main / `[IM]` main | 步骤 3.6（**已完成**：RO `c6731ac` / IM `d6786a5`，均经 PR rebase 合并 + main 自证轮绿） |
-| G6 | 三仓 `release.yml` dispatch 发布 | 步骤 5（**RO 已完成**：v0.2.0；**FF 已完成**：v0.5.2，2026-10-24 回读核验） |
+| G6 | 三仓 `release.yml` dispatch 发布 | 步骤 5（**三仓全部完成**：RO v0.2.0 / FF v0.5.2 / IM v0.3.1，均回读核验，2026-10-24） |
 | G7 | 部署变更（装 .so / 切 runtime / 重启） | 步骤 6 |
 
 ## 计划修改文件清单（按仓）

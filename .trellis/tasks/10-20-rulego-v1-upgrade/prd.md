@@ -126,13 +126,14 @@
      与 out 处理器（`resourceOriginResponse` / `ffmpegOverIpResponse`），日志无 ABI 错误。
       RO/IM 的 build job（含 `io.rulego.server.release == v1.0.0` 断言 + 容器回读）已绿；
       FF 已绿（瘦身后的单插件自证 smoke，master run `40055386317`）。
-11. [ ] **共存验证**：同一 `-plugin` runtime 内同时加载三插件，`/api/v1/components`
+11. [x] **共存验证**：同一 `-plugin` runtime 内同时加载三插件，`/api/v1/components`
       回读到全部 4 个节点类型（`resourceOrigin`/`indexedMedia`/`ffmpegOverIp`/
       `ffmpegOverIpProducer`，以 FF/IM 仓现有断言为准，非 5 个）+ 2 个处理器
       （`resourceOriginResponse`/`ffmpegOverIpResponse`），无 package-identity
-      冲突（`go version -m` 共享模块身份一致）。载体已确定为
-      `killbus/rulego-fleet`（成员闸门瘦身后的常驻组合 owner）；本批证据 =
-      三仓全部 `source: release` 后的 fleet run（`implement.md` 4.2）。
+      冲突（`go version -m` 共享模块身份一致）。`killbus/rulego-fleet` run
+      `40060461299` 双架构绿（钉死 runtime `sha256:53719b71…`，全 release 版
+      manifest，三件 `.so` 装入同进程）；首跑 `40059616367` 红于 manifest 校验
+      的 jq 输入上下文 bug，`e3c498d` 修复后绿，与发布物无关。
 12. [~] ffmpeg-over-ip CI 不再引用任何退役名 `indexed-vod` 的 peer 发布物，
       且其 build job 绿（成员证据：自身 sidecar + 自身注册 + 自身模块身份）。
       实现形态已变更（2026-10-24 批准，FF 本地 `ce9b2bf`，G4 未 push）：原
@@ -152,11 +153,13 @@
     含 join/group/flow 的链按 v1.0.0 新语义行为符合预期（或按新语义调整并记录）。
 
 **D. 发布产物与元数据**
-15. [~] 各插件 GitHub release 的 asset 带 `.sha256`，`sha256sum --check` 通过，
-    release tag 与 `VERSION` 一致（`--verify-tag`）。RO v0.2.0 已回读核验
-    （2026-10-24：tag→run head `c6731ac`、双架构 sha256 重算与 `.sha256` 文件
-    及 sidecar `plugin_sha256` 一致、sidecar 五字段为新 ABI）；IM/FF 待各自
-    G6 dispatch。
+15. [x] 各插件 GitHub release 的 asset 带 `.sha256`，`sha256sum --check` 通过，
+    release tag 与 `VERSION` 一致（`--verify-tag`）。三 release 全部回读核验
+    （2026-10-24，`gh api` + 资产重算）：RO v0.2.0 tag→`c6731ac`、FF v0.5.2
+    tag→`956ed85`、IM v0.3.1 tag→`d6786a5`；双架构 sha256 重算 = `.sha256`
+    文件 = sidecar `plugin_sha256`，sidecar 五字段为新 ABI。FF 侧注：首次
+    dispatch 成功（run `40055871422`），误发的重复 run `40055934172` 红于
+    `release already exists`，发布物无损（教训：dispatch 前先查 runs 列表）。
 16. [ ] GHCR 上 `-plugin` runtime/sdk 镜像 digest 与 `plugin-abi-release.json` 记录一致
     （`docker manifest inspect` 回读）。
 
