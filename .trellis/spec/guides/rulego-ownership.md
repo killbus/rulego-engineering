@@ -11,7 +11,7 @@ routes work to an authority; it is not a registry of live ecosystem state.
 | Host build, Plugin ABI lock, SDK/runtime production, and host image | `killbus/rulego-server-docker` source, release records, and published artifacts |
 | Generic ffmpeg-over-ip node contract and client integration | `killbus/rulego-ffmpeg-over-ip` source, compatibility record, tests, and release |
 | Stable resource identity and publication lifecycle | `killbus/rulego-resource-origin` source, node contract, tests, and release |
-| Indexed fragmented-media production | `killbus/rulego-indexed-vod` source, examples, tests, and release |
+| Indexed fragmented-media production | `killbus/rulego-indexed-media` source, examples, tests, and release (renamed from `rulego-indexed-vod` at v0.3.0; no alias, forwarding module, old-artifact selector, or cache fallback) |
 | Provider-specific resolution | The deployed yt-dlp HTTP wrapper (or other provider adapter), its observed HTTP contract, and the rule that invokes it |
 | Deployed rule, component, mapping, and endpoint state | Server configuration plus authenticated API read-back from that deployment |
 | External-service behavior | The service's own contract and observed response |
