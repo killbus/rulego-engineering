@@ -236,8 +236,9 @@
 - [x] **3.2 已完成（RO + IM）**：两份 `plugin-abi-release.json` 五字段与 FF 逐字节一致。
 - [x] **3.3 已完成（RO + IM）**：RO `0.1.3 → 0.2.0`（`VERSION`/`compatibility.json`
   /`node.go`），IM `0.3.0 → 0.3.1`（同三处）；两仓 `rulegoRelease=v1.0.0`。
-- [ ] **3.4** IM 的 e2e peer 引用（`ci.yml` 下载 ffmpeg-over-ip/resource-origin 的步）
-  指向升级后版本。
+- [x] **3.4 已完成（IM）**：`ci.yml` e2e peer 下载改指升级后 release（FF
+  `v0.5.1 → v0.5.2`、RO `v0.1.1 → v0.2.0`），commit `ec2a24b` 上 PR #5；
+  死锁解除后该步侧车断言验到的正是新 ABI 值。
 - [x] **3.5 已完成（RO + IM）**：两仓 `gofmt -l`（tracked `.go`，空）、`go vet .` 0、
   `go test -count=1 .` ok（IM 6.6s / RO 17.8s）。**RO 本机测试结果不可信为信号**：
   `testing.go:1369 TempDir RemoveAll cleanup: … catalog: The directory is not empty`
@@ -249,12 +250,11 @@
   `rulego-resource-origin` PR #4（head `c7ae356`）CI run `39810333396` 四 job 全绿
   （test / build amd64 / build arm64 / release-metadata）→ 用户批准 → **rebase 合并**，
   main `01c2b23` → `c6731ac`，head 自证轮 run `39811100101` **success**。
-- [x] **3.6 部分完成（IM）**：本地验证同上；PR #5（head `f3e64b7`）CI 中
-  `test` / 双架构 `build` / `release-metadata` **全绿**，仅
-  `Hermetic selected-track TS and HLS seek` 的 `Download and verify peer plugins`
-  红 —— peer 发布产物仍是旧 ABI（实测 `resource-origin v0.1.1` 与
-  `ffmpeg-over-ip v0.5.1` 的 `.abi.json` = `abi-d4fc741b…`/`sha256:5f9501666…`，
-  本仓 sidecar = `abi-3e0c9d46…`/`sha256:e19c9657…`，`jq -e` 判假）。属 3.4 未做 + Step 2 死锁。
+- [x] **3.6 已完成（IM）**：走 PR 而非直接 push main（合并点纪律）。PR #5
+  （head `f3e64b7`）首轮仅 `Hermetic selected-track TS and HLS seek` 的 peer
+  下载红（peer 仍是旧 ABI，属 3.4 未做 + Step 2 死锁）；3.4 修复后 head
+  `ec2a24b` CI **5/5 全绿**（run `40057506621`）→ 用户批准 → **rebase 合并**，
+  main = `d6786a5`，main 自证轮 run `40058007544` **5/5 绿**。
 - [x] **3.7 已完成（RO）**：PR 轮与 main 自证轮均产出双架构 `.so`/`.sha256`/`.abi.json`，
   `sha256sum --check` 与 sidecar 比对通过，`io.rulego.server.release == v1.0.0`
   断言（`ci.yml:118`）随 build job 一起绿。IM 的 build job 同样已绿。
@@ -347,7 +347,7 @@
 | G2 | push `[SD]` 功能分支 + 开 PR（`pull_request` 触发 plugin-abi.yml；**不为触发 CI 直接 push main**） | 步骤 1.7 |
 | G3 | 合并后的 main 上 dispatch `plugin-abi-publish.yml` 发布 SDK/runtime 镜像 | **已批准并完成**（environment 无人工审批闸门，故批准 dispatch 即发布闸门） |
 | G4 | push `[FF]` master | 步骤 2.6（**已批准并完成**：PR #2 rebase 合并，master `956ed85` 自证绿 `40055386317`） |
-| G5 | push `[RO]` main / `[IM]` main | 步骤 3.6 |
+| G5 | push `[RO]` main / `[IM]` main | 步骤 3.6（**已完成**：RO `c6731ac` / IM `d6786a5`，均经 PR rebase 合并 + main 自证轮绿） |
 | G6 | 三仓 `release.yml` dispatch 发布 | 步骤 5（**RO 已完成**：v0.2.0；**FF 已完成**：v0.5.2，2026-10-24 回读核验） |
 | G7 | 部署变更（装 .so / 切 runtime / 重启） | 步骤 6 |
 
