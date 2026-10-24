@@ -204,3 +204,11 @@ distribution = option 5's shape, the thing this repo must not be),
 `rulego-integration` is the runner-up: accurate but empty - a process word
 for an artifact owner, drifts into a misc bin. All candidates verified
 available under `killbus` on 2026-10-24.
+
+Correction (2026-10-24): a first `AGENTS.md` (change discipline) was pushed
+and rebase-merged into `rulego-fleet` (commit `3808ee2`, merge
+`db19da8`). The owner ruled this inadmissible: an agent-instruction file
+is not part of the composition the fleet names; the fleet is an artifact
+owner of the ecosystem and carries only its identity (README) and its set
+(manifest). The repository was deleted and re-created clean; the
+discipline lives only in the delivery spec's "Fleet repository" section.

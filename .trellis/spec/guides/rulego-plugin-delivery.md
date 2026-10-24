@@ -167,8 +167,12 @@ request with CI green, commit fragmentation resolved (rebase/fixup/squash)
 before the merge, then a rebase merge. There is no direct push to the default
 branch, not even for a one-line manifest edit: the fleet's git history is the
 audit trail of the composition, so a silent push into it defeats the point.
-Process lives here and in the delivery workflow; the fleet's own README
-carries only identity and boundary, not process.
+Process lives in this guide only: the fleet's README carries identity and
+boundary, not process, and the fleet carries no agent-instruction file
+(`AGENTS.md` or similar) - it is an artifact owner of the ecosystem, and
+process is not part of the composition it names (owner ruling 2026-10-24,
+after a first AGENTS.md had been merged into it; see task 10-20
+`research/coexistence-gate-verdict.md`).
 
 ## Installation evidence
 
