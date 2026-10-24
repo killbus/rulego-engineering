@@ -158,6 +158,18 @@ that exists only as a local command leaves the contract unverified on the one
 authoritative environment, and a local green run there proves only that the
 local toolchain agreed with itself.
 
+## Fleet repository
+
+The composition owner (`rulego-fleet`) is part of the ecosystem, not a
+sidecar of it, and changes to it follow the same merge-point discipline as
+member repositories: a feature branch, commits that leave a trail, a pull
+request with CI green, commit fragmentation resolved (rebase/fixup/squash)
+before the merge, then a rebase merge. There is no direct push to the default
+branch, not even for a one-line manifest edit: the fleet's git history is the
+audit trail of the composition, so a silent push into it defeats the point.
+Process lives here and in the delivery workflow; the fleet's own README
+carries only identity and boundary, not process.
+
 ## Installation evidence
 
 Installing a plugin means more than copying a file. Verify all of the following:
