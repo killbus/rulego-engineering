@@ -208,9 +208,11 @@
   `go -C plugin test -count=1 .`（ok）全绿。`go -C plugin list -m` 回读
   `ffmpeg-over-ip v0.5.0` + `rulego v1.0.0`。**`-race` 本机跑不了**（`requires cgo`，
   PATH 无 gcc/clang），由 CI 覆盖。
-- [x] **2.6 提交已完成（本地）**：分支 `feat/rulego-v1-abi-on-hardened`
-  （自 `origin/master 90ce79c`），commit `cd3f446`（9 文件 +16/−16）。
-  **未 push**——G4 待批准，且 push 后 build job 会因 2.4 未做而红（见下）。
+- [x] **2.6 已完成（G4 已批准并执行）**：分支 `feat/rulego-v1-abi-on-hardened`
+  （自 `origin/master 90ce79c`）push 两个 commit（`cd3f446` 升级 +
+  `ce9b2bf` 闸门瘦身），PR #2（CI 5/5 绿，run `40055027123`）→ 用户确认 →
+  **rebase 合并**，`origin/master` = `956ed85`，master 自证轮 run
+  `40055386317` **5/5 绿**（G6 的 `ci_run_id` 候选）。
 
 > **步骤 2 阻塞已于 2026-10-24 结构性解除**：原死锁（FF/IM 成员闸门互指对方
 > 已发布产物 + `release.yml` 要求整条 CI 全绿）的成因是集合断言放在成员闸门
@@ -344,7 +346,7 @@
 | G1 | 版本号方案 + client 方案确认 | **已批准** |
 | G2 | push `[SD]` 功能分支 + 开 PR（`pull_request` 触发 plugin-abi.yml；**不为触发 CI 直接 push main**） | 步骤 1.7 |
 | G3 | 合并后的 main 上 dispatch `plugin-abi-publish.yml` 发布 SDK/runtime 镜像 | **已批准并完成**（environment 无人工审批闸门，故批准 dispatch 即发布闸门） |
-| G4 | push `[FF]` master | 步骤 2.6 |
+| G4 | push `[FF]` master | 步骤 2.6（**已批准并完成**：PR #2 rebase 合并，master `956ed85` 自证绿 `40055386317`） |
 | G5 | push `[RO]` main / `[IM]` main | 步骤 3.6 |
 | G6 | 三仓 `release.yml` dispatch 发布 | 步骤 5（**RO 已完成**：v0.2.0，2026-10-24 回读核验） |
 | G7 | 部署变更（装 .so / 切 runtime / 重启） | 步骤 6 |
