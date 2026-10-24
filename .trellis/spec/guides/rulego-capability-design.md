@@ -50,7 +50,7 @@ memory.
   the RuleGo plugin exposes it without absorbing unrelated media policy.
 - Resource publication owns stable identity and readiness lifecycle; byte
   serving remains the HTTP/static-resource owner's responsibility.
-- Indexed VOD production starts from normalized source data and owns a bounded
+- Indexed media production starts from normalized source data and owns a bounded
   indexed output member. Provider resolution and final manifest presentation
   remain composable concerns.
 - Public-origin rewriting is presentation composition. It must not change the
