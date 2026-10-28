@@ -1,21 +1,31 @@
+// Budva schema v2 parser for the generic elasticsearchWrite node.
+//
+// This file is the BODY of the jsTransform script (the value of the node
+// configuration's "jsScript"). At deploy time the node wraps it as
+//   function Transform(msg, metadata, msgType, dataType) { <this body> }
+// (rulego components/transform JsTransformFuncTemplate); chain.json embeds
+// it byte-identically (drift-guarded, and the guard asserts this script
+// contains NO crypto symbol — see parser_test.go).
+//
+// It is PURE BUSINESS LOGIC. All byte-level and crypto work happened
+// upstream in node_wire (crypto.js + wire.js): the HMAC gate already ran
+// over the exact wire bytes, and node_wire published
+//   metadata.audit_id = a hex digest of the exact raw body (see wire.js)
+// and delivered this node a plain string msg = the decoded raw body
+// (wire node's output, TEXT data type). This node parses and validates;
+// it never touches raw bytes or any hashing/signing (all of that is
+// node_wire's responsibility, see wire.js).
+//
+// Output: the elasticsearchWrite single-index message (plugin contract,
+// rulego-elasticsearch client.go) for budva-messages-v1. On any contract
+// violation this body throws -> the node routes Failure -> the endpoint
+// responds 400 with the reason (responseToBody).
+
 try {
-  // 1. msg is uppercase-hex(raw request body) per the toHex processor.
-  var rawBytes = hexToBytes(msg);
-
-  // 2. HMAC gate. Key empty => verification off (matches Budva: no secret ->
-  //    no signature header sent). Key set => signature mandatory + must verify.
-  var key = '';
-  if (typeof global !== 'undefined' && global) key = String(global.budva_hmac_key || '');
-  if (key !== '') {
-    var sig = metadata['X-Budva-Signature'] || metadata['x-budva-signature'] || '';
-    if (sig.indexOf('sha256=') !== 0) throw new Error('budva-parse: hmac signature missing or malformed');
-    var expected = bytesToHex(hmacSha256Bytes(utf8Encode(key), rawBytes));
-    if (!ctEqualHex(sig.slice(7), expected)) throw new Error('budva-parse: hmac signature mismatch');
-  }
-
-  // 3. Parse from the exact raw bytes (never re-serialize to compare/verify).
+  // 1. Parse from the decoded raw body (node_wire decoded the exact wire
+  //    bytes; JSON text is unchanged by the decode).
   var obj;
-  try { obj = JSON.parse(utf8Decode(rawBytes)); }
+  try { obj = JSON.parse(msg); }
   catch (pe) { throw new Error('budva-parse: body is not valid JSON'); }
   if (!obj || typeof obj !== 'object') throw new Error('budva-parse: body is not a JSON object');
   if (obj.schema_version !== 2) throw new Error('budva-parse: unsupported schema_version ' + obj.schema_version);
@@ -27,7 +37,7 @@ try {
   if (typeof m.chat_id !== 'number' || !isFinite(m.chat_id)) throw new Error('budva-parse: missing chat_id');
   if (typeof m.message_id !== 'number' || !isFinite(m.message_id)) throw new Error('budva-parse: missing message_id');
 
-  // 4. Build the single-index elasticsearchWrite message (plugin contract).
+  // 2. Build the single-index elasticsearchWrite message (plugin contract).
   //    _id stable per message; op "index" = unconditional overwrite (LWW by
   //    occurred_at). deleted => tombstone doc (the node cannot issue deletes).
   var id = String(m.chat_id) + ':' + String(m.message_id);
@@ -52,11 +62,6 @@ try {
     doc.has_sensitive_content = (m.has_sensitive_content === true);
     doc.restriction_reason = (typeof m.restriction_reason === 'string') ? m.restriction_reason : '';
   }
-
-  // rawHex = the toHex hex carrier of the exact wire bytes. The audit branch
-  // derives its id (sha256 of the raw body) from this; the parser stays the
-  // single owner of validation and of what the bytes mean.
-  metadata.rawHex = msg;
 
   return {
     msg: JSON.stringify({

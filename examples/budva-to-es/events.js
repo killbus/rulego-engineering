@@ -4,23 +4,23 @@
 // configuration's "jsScript"). At deploy time the node wraps it as
 //   function Transform(msg, metadata, msgType, dataType) { <this body> }
 // (rulego components/transform JsTransformFuncTemplate), and the chain embeds
-// crypto.js + this file byte-identically (drift-guarded by parser_test.go).
+// it byte-identically (drift-guarded by parser_test.go, which ALSO asserts
+// this file contains no crypto symbol).
 //
-// It is a PURE PROJECTION of the parser's validated output. The parser
-// (parser.js) is the single owner of validation: HMAC over the exact wire
-// bytes and strict schema v2 checks already ran upstream, and this branch
-// only exists for the messages it emitted. The engine hands a JSON data type
-// to jsTransform as a PARSED object (components/base base.go GetDataByType),
-// so msg is the messages contract:
-//   msg      = { index, operations: [{ op, id, doc }] }
-//   metadata = { rawHex, ...request headers }  (rawHex stamped by the parser
-//              = the toHex hex carrier of the exact raw request body)
+// It is a PURE PROJECTION. Validation is node_parse's; hashing is
+// node_wire's — the audit identity is CONSUMED here as data:
+//   metadata.audit_id = hex digest of the exact raw body, published by
+//   node_wire (the single crypto owner).
+// The engine hands a JSON data type to jsTransform as a PARSED object
+// (components/base base.go GetDataByType), so msg is the messages contract
+// emitted by node_parse:
+//   msg = { index, operations: [{ op, id, doc }] }
 //
 // Output: the elasticsearchWrite single-index message (plugin contract,
 // rulego-elasticsearch client.go) for budva-events-v1:
-//   _id = sha256Hex(exact raw body bytes)  -> a redelivered body is the same
-//   _id, op "create" -> ES 409 duplicate, classified duplicate by the plugin
-//   (idempotent success; the audit index is append-only delivery log).
+//   _id = metadata.audit_id  -> a redelivered body is the same _id, op
+//   "create" -> ES 409 duplicate, classified duplicate by the plugin
+//   (idempotent success; the audit index is an append-only delivery log).
 // Any contract violation throws -> the node routes Failure -> the endpoint
 // responds 400 with the reason (responseToBody, spike-verified).
 
@@ -34,11 +34,12 @@ try {
     throw new Error('budva-events: doc missing chat_id/message_id');
   }
 
-  var rawHex = String(metadata.rawHex || '');
-  if (rawHex === '' || rawHex.length % 2 !== 0) {
-    throw new Error('budva-events: missing metadata.rawHex');
+  // The audit identity is data, published by node_wire over the exact wire
+  // bytes — this node does not (and cannot) recompute it.
+  var id = String(metadata.audit_id || '');
+  if (id.length !== 64) {
+    throw new Error('budva-events: missing metadata.audit_id (node_wire must run first)');
   }
-  var id = bytesToHex(sha256Bytes(hexToBytes(rawHex)));
 
   return {
     msg: JSON.stringify({

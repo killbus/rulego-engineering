@@ -2,22 +2,28 @@
 
 Deploys the generic `elasticsearchWrite` node (from `killbus/rulego-elasticsearch`)
 against the real Budva push contract (schema v2) using **only RuleGo-native
-content**: two `jsTransform` nodes (embedded scripts below), two write nodes,
-two indices — the current-state index and the append-only audit index — joined
-before the HTTP response. No Budva semantics are compiled into the plugin, and
-nothing under this directory is imported by the plugin package.
+content**: three `jsTransform` nodes (embedded scripts below), two write
+nodes, two indices — the current-state index and the append-only audit index —
+joined before the HTTP response. `node_wire` is the single owner of crypto and
+raw-byte handling; the other transforms are pure business logic. No Budva
+semantics are compiled into the plugin, and nothing under this directory is
+imported by the plugin package.
 
 ## What it does
 
 ```
 POST /budva-to-es  (application/json, optional X-Budva-Signature)
   → toHex + headersToMetadata   (raw body → hex carrier; headers → metadata)
-  → jsTransform budvaParse      (HMAC gate, strict schema v2 validation,
-                                 _id derivation, tombstone for deleted;
-                                 stamps metadata.rawHex = the hex raw body)
+  → jsTransform budvaWire       (the only crypto owner: HMAC gate over the
+                                 exact wire bytes, publishes
+                                 metadata.audit_id = sha256(raw), and hands
+                                 downstream the body decoded as a string)
+  → jsTransform budvaParse      (strict schema v2 validation, _id derivation,
+                                 tombstone for deleted — pure business)
   → fork
       ├→ elasticsearchWrite     (budva-messages-v1, op index, LWW)
-      └→ jsTransform budvaEvents (audit projection: _id = sha256(raw body))
+      └→ jsTransform budvaEvents (audit projection: consumes
+                                 metadata.audit_id — pure business)
            → elasticsearchWrite  (budva-events-v1, op create, append-only)
   → join (timeout 45s)
   → 200 + joined ack  |  400 + reason  (Budva never retries; the code is the signal)
@@ -32,6 +38,14 @@ POST /budva-to-es  (application/json, optional X-Budva-Signature)
   `_id` and becomes an ES 409 duplicate, which the plugin classifies as success
   (idempotent, no second doc). The audit doc is `{event, occurred_at, chat_id,
   message_id, received_at}`: a delivery log, not a second copy of message text.
+- Why a wire node at all: jsTransform nodes are isolated VMs — a node
+  cannot call another node's functions, and a chain file cannot inject UDFs.
+  So the crypto capability atomic is a NODE that computes and publishes
+  values (`metadata.audit_id`) that other nodes consume, instead of inlining
+  the same crypto source into every consumer (which would duplicate it in
+  the running chain). The harness asserts the single-owner property
+  (`TestCryptoSingleOwner`): `parser.js` and `events.js` contain no crypto
+  symbol, and `chain.json` embeds crypto in exactly one node.
 - Response contract (verified by the task's fork/join spike, see "Audit
   index behavior" below): the join is the chain's single terminal, so the
   response is deterministic. 200 body = the joined
@@ -62,11 +76,12 @@ contract:
 
 | File | Role |
 | --- | --- |
-| `crypto.js` | vendored pure-JS SHA-256/HMAC-SHA256 + hex/UTF-8 codec (RFC 6234/2104), no goja builtins |
-| `parser.js` | parse node body: HMAC gate over exact wire bytes, strict schema validation, messages contract emit, `metadata.rawHex` stamp |
-| `events.js` | audit node body: pure projection of the parser contract, `_id = sha256(raw)` from `metadata.rawHex`, `received_at` = server receipt time |
-| `parser_test.go` | goja harness: runs the **deployed** scripts through rulego v1.0.0's `GojaJsEngine` with the node's exact wrapper; anchors = RFC 6234 digests, Go-stdlib HMAC/SHA-256 references, the plugin message contract, redelivery idempotency; includes the chain-embedding + topology drift guard |
-| `chain.json` | rule chain: endpoint + fork + two transform nodes + two write nodes + join; each `jsScript` is byte-identical to its tested source (guard-tested) |
+| `crypto.js` | vendored pure-JS SHA-256/HMAC-SHA256 + hex/UTF-8 codec (RFC 6234/2104), no goja builtins — the shared capability, embedded in exactly one node |
+| `wire.js` | `node_wire` body: the single crypto owner — HMAC gate over exact wire bytes, publishes `metadata.audit_id = sha256(raw)`, decodes the body for downstream (pure business downstream sees a string, never bytes) |
+| `parser.js` | `node_parse` body: strict schema v2 validation, messages contract emit, tombstone for deleted — **no crypto** |
+| `events.js` | `node_events` body: pure audit projection, consumes `metadata.audit_id`, `received_at` = server receipt time — **no crypto** |
+| `parser_test.go` | goja harness: runs the **deployed** scripts through rulego v1.0.0's `GojaJsEngine` with the node's exact wrapper; anchors = RFC 6234 digests, Go-stdlib HMAC/SHA-256 references, the plugin message contract, redelivery idempotency; `TestCryptoSingleOwner` asserts crypto lives in exactly one node; chain-embedding + topology drift guard |
+| `chain.json` | rule chain: endpoint + wire + parse + fork + two write nodes + events + join; each `jsScript` is byte-identical to its tested source (guard-tested) |
 | `mappings/budva-messages-v1.json` | current-state index body, `dynamic: false` |
 | `mappings/budva-events-v1.json` | audit index body, `dynamic: false` |
 | `fixtures/` | `new.json` / `edited.json` / `deleted.json`, real-shape samples |
@@ -160,11 +175,13 @@ Covers: RFC 6234 digests under goja, Go-stdlib-referenced HMAC (incl. 64/65-
 byte key paths), schema strictness, the six HMAC gate cases, the emitted
 plugin contracts (messages LWW + audit create), the audit `_id` against a
 Go-stdlib SHA-256 reference, redelivery idempotency (same raw => same id),
-and that `chain.json` embeds BOTH tested scripts byte-identically with the
+that `chain.json` embeds ALL THREE tested scripts byte-identically with the
 load-bearing route/topology facts (processor order, `wait:true`,
-`responseToBody`, fork/join wiring, `ref://` servers, join timeout). A
-mutation check confirmed the crypto harness and the drift guard fail when the
-code or the embedded script changes. The response contract stated in "Audit
+`responseToBody`, wire-first entry, fork/join wiring, `ref://` servers, join
+timeout), and the single-owner property (`TestCryptoSingleOwner`: crypto
+embedded in exactly one node, none in parser.js/events.js). A mutation check
+confirmed the crypto harness and the drift guard fail when the code or the
+embedded script changes. The response contract stated in "Audit
 index behavior" below was established by the task's fork/join spike (task
 research: `.trellis/tasks/10-28-budva-events/research/forkjoin-spike/`, real
 engine + real HTTP endpoint) — a one-time design-time verification against

@@ -1,13 +1,19 @@
-// Harness for the Budva example profile.
+// Harness for the Budva example profile (wire / parse / events branches).
 //
-// This test is the mechanical boundary proof for examples/budva: it runs the
-// deployed jsTransform script (crypto.js + parser.js, exactly as chain.json
-// embeds it) through the SAME engine the deployed jsTransform node uses —
-// rulego v1.0.0's GojaJsEngine, the node's JsTransformFuncTemplate wrapper —
-// so a green test means the committed JS is the JS that runs in the chain.
-// External anchors: RFC 6234 digests, a Go-stdlib HMAC reference (independent
-// implementation), and the elasticsearchWrite plugin's message contract. It
-// imports rulego (the engine) but never the plugin package.
+// This test is the mechanical boundary proof for examples/budva-to-es: it
+// runs the deployed jsTransform scripts (crypto.js+wire.js for the wire
+// node, parser.js for the parse node, events.js for the audit node —
+// exactly as chain.json embeds them) through the SAME engine the deployed
+// nodes use — rulego v1.0.0's GojaJsEngine, the node's JsTransformFuncTemplate
+// wrapper — so a green test means the committed JS is the JS that runs in
+// the chain. External anchors: RFC 6234 digests, Go-stdlib HMAC and
+// SHA-256 references (independent implementations), and the
+// elasticsearchWrite plugin's message contract. It imports rulego (the
+// engine) but never the plugin package.
+//
+// The data flow mirrors the chain: wire (hex raw body -> decoded string +
+// metadata.audit_id) -> parse (decoded string -> messages contract) ->
+// events (messages contract + metadata.audit_id -> audit contract).
 package main
 
 import (
@@ -35,6 +41,15 @@ const (
 	jefeKey  = "Jefe"
 	jefeData = "what do ya want for nothing?"
 )
+
+// Crypto symbols that MUST appear in exactly one place at runtime (node_wire).
+// The architecture guard (TestCryptoSingleOwner) scans chain.json and the
+// source files for these.
+var cryptoSymbols = []string{
+	"sha256Bytes", "hmacSha256Bytes", "hexToBytes", "bytesToHex",
+	"utf8Encode", "utf8Decode", "ctEqualHex", "concatBytes", "rotr",
+	"HEX_DIGITS", "SHA256_K",
+}
 
 // buildEngine reproduces jsTransform's node wiring (js_transform_node.go Init):
 // NewGojaJsEngine(config, fmt.Sprintf(JsTransformFuncTemplate, jsScript), vars).
@@ -82,39 +97,37 @@ func mustRead(t *testing.T, path string) []byte {
 	return b
 }
 
-// parseScript is exactly what chain.json embeds in the parse node.
+// wireScript is exactly what chain.json embeds in node_wire.
+func wireScript(t *testing.T) string {
+	t.Helper()
+	return readAsset(t, "crypto.js") + "\n" + readAsset(t, "wire.js")
+}
+
+// parseScript is exactly what chain.json embeds in node_parse (pure business;
+// the guard asserts it is crypto-free).
 func parseScript(t *testing.T) string {
 	t.Helper()
-	return readAsset(t, "crypto.js") + "\n" + readAsset(t, "parser.js")
+	return readAsset(t, "parser.js")
 }
 
-// eventsScript is exactly what chain.json embeds in the audit node.
+// eventsScript is exactly what chain.json embeds in node_events (pure
+// projection; the guard asserts it is crypto-free).
 func eventsScript(t *testing.T) string {
 	t.Helper()
-	return readAsset(t, "crypto.js") + "\n" + readAsset(t, "events.js")
+	return readAsset(t, "events.js")
 }
 
-// parseOutput runs the committed parse script and returns the messages
-// contract (as the object the next jsTransform receives for a JSON data
-// type, components/base base.go GetDataByType) plus the stamped metadata,
-// normalized to map[string]string (the type the engine writes back via
-// processJsResult ReplaceAll). The goja engine hands the returned metadata
-// back as either map[string]string or map[string]interface{} depending on
-// how the script touched it; both are normalized here.
-func parseOutput(t *testing.T, raw []byte, meta map[string]string) (interface{}, map[string]string) {
-	t.Helper()
-	engine := buildEngine(t, parseScript(t), map[string]string{"budva_hmac_key": ""})
-	out, err := runTransform(t, engine, hexOf(raw), meta, "budva-to-es")
-	if err != nil {
-		t.Fatalf("parse: %v", err)
-	}
-	var contract interface{}
-	if err := json.Unmarshal([]byte(out["msg"].(string)), &contract); err != nil {
-		t.Fatalf("parse emit not JSON: %v", err)
-	}
-	return contract, normalizeMetadata(t, out["metadata"])
+func hexOf(raw []byte) string { return strings.ToUpper(hex.EncodeToString(raw)) }
+
+func sign(key string, raw []byte) string {
+	mac := hmac.New(sha256.New, []byte(key))
+	mac.Write(raw)
+	return "sha256=" + hex.EncodeToString(mac.Sum(nil))
 }
 
+// normalizeMetadata accepts the metadata map as goja hands it back
+// (map[string]string when untouched, map[string]interface{} when the script
+// added non-string values).
 func normalizeMetadata(t *testing.T, v interface{}) map[string]string {
 	t.Helper()
 	m := make(map[string]string)
@@ -133,18 +146,57 @@ func normalizeMetadata(t *testing.T, v interface{}) map[string]string {
 	return m
 }
 
-func hexOf(raw []byte) string { return strings.ToUpper(hex.EncodeToString(raw)) }
+// wireOutput runs the committed wire script exactly as the endpoint feeds it
+// (msg = hex raw body, TEXT) and returns the decoded body string plus the
+// stamped metadata — the real input of the parse node.
+func wireOutput(t *testing.T, raw []byte, meta map[string]string, hmacKey string) (string, map[string]string) {
+	t.Helper()
+	engine := buildEngine(t, wireScript(t), map[string]string{"budva_hmac_key": hmacKey})
+	out, err := runTransform(t, engine, hexOf(raw), meta, "budva-to-es")
+	if err != nil {
+		t.Fatalf("wire: %v", err)
+	}
+	return out["msg"].(string), normalizeMetadata(t, out["metadata"])
+}
 
-func sign(key string, raw []byte) string {
-	mac := hmac.New(sha256.New, []byte(key))
-	mac.Write(raw)
-	return "sha256=" + hex.EncodeToString(mac.Sum(nil))
+// parseOutput runs the committed parse script on the wire node's ACTUAL
+// output (chained, as the chain delivers it) and returns the messages
+// contract as the object the next jsTransform receives for a JSON data type
+// (components/base base.go GetDataByType) plus the metadata.
+func parseOutput(t *testing.T, body string, md map[string]string) (interface{}, map[string]string) {
+	t.Helper()
+	engine := buildEngine(t, parseScript(t), nil)
+	out, err := runTransform(t, engine, body, md, "budva-to-es")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	var contract interface{}
+	if err := json.Unmarshal([]byte(out["msg"].(string)), &contract); err != nil {
+		t.Fatalf("parse emit not JSON: %v", err)
+	}
+	return contract, normalizeMetadata(t, out["metadata"])
+}
+
+// eventsOutput runs the committed events script on the parse node's ACTUAL
+// contract object (chained, as the fork delivers it) plus wire metadata.
+func eventsOutput(t *testing.T, contract interface{}, md map[string]string) map[string]interface{} {
+	t.Helper()
+	engine := buildEngine(t, eventsScript(t), nil)
+	out, err := engine.Execute(nil, transform.JsTransformFuncName, contract, md, "budva-to-es", "JSON")
+	if err != nil {
+		t.Fatalf("events: %v", err)
+	}
+	m, ok := out.(map[string]interface{})
+	if !ok {
+		t.Fatalf("events returned %T", out)
+	}
+	return m
 }
 
 // TestCryptoVectors pins the vendored crypto against external facts under the
 // real goja engine: RFC 6234 digests, a Go-stdlib HMAC reference, the 64/65-
 // byte key path (RFC 2104 §3), and a UTF-8 round-trip through the exact
-// hexToBytes+utf8Decode path the parser uses for the raw body.
+// hexToBytes+utf8Decode path the wire node uses for the raw body.
 func TestCryptoVectors(t *testing.T) {
 	crypto := readAsset(t, "crypto.js")
 	probe := `
@@ -213,8 +265,71 @@ func TestCryptoVectors(t *testing.T) {
 	}
 }
 
+// TestWireGate pins the wire node's HMAC gate: valid accepted, tampered body
+// / wrong key / missing / malformed signature dropped, and no-key
+// no-signature accepted. Reference signer is Go's crypto/hmac.
+func TestWireGate(t *testing.T) {
+	key := "unit-test-key-0123456789"
+	raw := mustRead(t, "fixtures/new.json")
+
+	cases := []struct {
+		name   string
+		sig    string
+		key    string
+		wantOK bool
+		body   []byte
+	}{
+		{"valid", sign(key, raw), key, true, raw},
+		{"wrong_key", sign("other-key", raw), key, false, raw},
+		{"missing_sig", "", key, false, raw},
+		{"no_key_no_sig", "", "", true, raw},
+		{"malformed_sig", "sha1=abcd", key, false, raw},
+		{"tampered_body", sign(key, raw), key, false, append(append([]byte{}, raw...), ' ')},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			engine := buildEngine(t, wireScript(t), map[string]string{"budva_hmac_key": tc.key})
+			meta := map[string]string{}
+			if tc.sig != "" {
+				meta["X-Budva-Signature"] = tc.sig
+			}
+			_, err := runTransform(t, engine, hexOf(tc.body), meta, "budva-to-es")
+			if tc.wantOK && err != nil {
+				t.Fatalf("expected accept, got failure: %v", err)
+			}
+			if !tc.wantOK && err == nil {
+				t.Fatalf("expected drop, got accept")
+			}
+		})
+	}
+}
+
+// TestWireAuditId pins the published audit identity against an independent
+// reference: Go's crypto/sha256 over the SAME raw bytes the wire node
+// decodes. This is the single source every downstream audit doc inherits.
+func TestWireAuditId(t *testing.T) {
+	for name, raw := range map[string][]byte{
+		"new":     mustRead(t, "fixtures/new.json"),
+		"edited":  mustRead(t, "fixtures/edited.json"),
+		"deleted": mustRead(t, "fixtures/deleted.json"),
+	} {
+		t.Run(name, func(t *testing.T) {
+			body, md := wireOutput(t, raw, map[string]string{}, "")
+			// The wire node delivers the decoded body as a string (TEXT).
+			if strings.TrimSpace(body) == "" {
+				t.Fatalf("wire delivered empty body")
+			}
+			sum := sha256.Sum256(raw)
+			if got, want := md["audit_id"], hex.EncodeToString(sum[:]); got != want {
+				t.Fatalf("audit_id = %s, want Go-stdlib sha256(raw) = %s", got, want)
+			}
+		})
+	}
+}
+
 // TestParserEmit pins parser.js against the plugin message contract: single
-// index, op "index", _id <chat>:<msg>, LWW doc fields, tombstone for deleted.
+// index, op "index", _id <chat>:<msg>, LWW doc fields, tombstone for
+// deleted — fed by the WIRE node's actual output, as in the chain.
 func TestParserEmit(t *testing.T) {
 	fixtures := map[string]struct {
 		raw        []byte
@@ -228,7 +343,11 @@ func TestParserEmit(t *testing.T) {
 	}
 	for name, fx := range fixtures {
 		t.Run(name, func(t *testing.T) {
-			contract, md := parseOutput(t, fx.raw, map[string]string{})
+			body, md := wireOutput(t, fx.raw, map[string]string{}, "")
+			contract, pmd := parseOutput(t, body, md)
+			if pmd["audit_id"] != md["audit_id"] {
+				t.Errorf("metadata.audit_id did not pass through parse (%v -> %v)", md["audit_id"], pmd["audit_id"])
+			}
 
 			var req struct {
 				Index      string `json:"index"`
@@ -260,11 +379,6 @@ func TestParserEmit(t *testing.T) {
 					t.Errorf("doc missing field %q: %s", f, string(req.Operations[0].Doc))
 				}
 			}
-			// The audit branch's id source must be the EXACT wire bytes.
-			if got := md["rawHex"]; got != hexOf(fx.raw) {
-				t.Errorf("metadata.rawHex = %v, want %q (the toHex carrier of the raw body)", got, hexOf(fx.raw))
-			}
-			// Invariant the plugin's strict decoder enforces (client.go index rule).
 			if req.Index != strings.ToLower(req.Index) || !isLowerDNS(req.Index) {
 				t.Errorf("index %q fails the plugin's ^[a-z0-9._-]+$ rule", req.Index)
 			}
@@ -284,50 +398,10 @@ func isLowerDNS(s string) bool {
 	return true
 }
 
-// TestParserHMAC pins the signature gate: valid accepted, tampered body /
-// wrong key / missing / malformed signature dropped, and no-key no-signature
-// accepted. Reference signer is Go's crypto/hmac (independent implementation).
-func TestParserHMAC(t *testing.T) {
-	key := "unit-test-key-0123456789"
-	raw := mustRead(t, "fixtures/new.json")
-
-	cases := []struct {
-		name   string
-		sig    string
-		key    string
-		wantOK bool
-		body   []byte
-	}{
-		{"valid", sign(key, raw), key, true, raw},
-		{"wrong_key", sign("other-key", raw), key, false, raw},
-		{"missing_sig", "", key, false, raw},
-		{"no_key_no_sig", "", "", true, raw},
-		{"malformed_sig", "sha1=abcd", key, false, raw},
-		{"tampered_body", sign(key, raw), key, false, append(append([]byte{}, raw...), ' ')},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			engine := buildEngine(t, parseScript(t), map[string]string{"budva_hmac_key": tc.key})
-			meta := map[string]string{}
-			if tc.sig != "" {
-				meta["X-Budva-Signature"] = tc.sig
-			}
-			_, err := runTransform(t, engine, hexOf(tc.body), meta, "budva-to-es")
-			if tc.wantOK && err != nil {
-				t.Fatalf("expected accept, got failure: %v", err)
-			}
-			if !tc.wantOK && err == nil {
-				t.Fatalf("expected drop, got accept")
-			}
-		})
-	}
-}
-
 // TestParserRejection pins strict schema validation: bad version, unknown
-// event, non-JSON body, missing message.
+// event, non-JSON body, missing message. Bodies pass through the wire node
+// (which only decodes and signs) and must be rejected by the parse node.
 func TestParserRejection(t *testing.T) {
-	engine := buildEngine(t, parseScript(t), nil)
-
 	valid := string(mustRead(t, "fixtures/new.json"))
 	cases := map[string]string{
 		"bad_version":   strings.Replace(valid, `"schema_version": 2`, `"schema_version": 3`, 1),
@@ -335,9 +409,10 @@ func TestParserRejection(t *testing.T) {
 		"not_json":      `{"schema_version":2,"event":"new",`,
 		"no_message":    `{"schema_version":2,"event":"new","occurred_at":"2026-01-01T00:00:00Z"}`,
 	}
-	for name, body := range cases {
+	for name, bodyStr := range cases {
 		t.Run(name, func(t *testing.T) {
-			_, err := runTransform(t, engine, hexOf([]byte(body)), map[string]string{}, "budva-to-es")
+			body, md := wireOutput(t, []byte(bodyStr), map[string]string{}, "")
+			_, err := parseRun(body, md)
 			if err == nil {
 				t.Fatalf("expected rejection for %s", name)
 			}
@@ -345,10 +420,38 @@ func TestParserRejection(t *testing.T) {
 	}
 }
 
+func parseRun(body string, md map[string]string) (map[string]interface{}, error) {
+	config := types.NewConfig()
+	engine, err := js.NewGojaJsEngine(config, strings.Replace(transform.JsTransformFuncTemplate, "%s", parseScriptRaw(), 1), nil)
+	if err != nil {
+		return nil, err
+	}
+	out, err := engine.Execute(nil, transform.JsTransformFuncName, body, md, "budva-to-es", "TEXT")
+	if err != nil {
+		return nil, err
+	}
+	m, ok := out.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("parse returned %T", out)
+	}
+	return m, nil
+}
+
+// parseScriptRaw reads parser.js without a testing.T (parseRun reports the
+// error itself instead of failing the test).
+func parseScriptRaw() string {
+	b, err := os.ReadFile("parser.js")
+	if err != nil {
+		panic(err)
+	}
+	return string(b)
+}
+
 // TestEventsEmit pins the audit branch: it runs the committed events script
-// on the parser's ACTUAL output (chained, as the fork delivers it) and
-// asserts the single-index audit contract. The id is anchored to an
-// independent reference: Go's crypto/sha256 over the same raw bytes.
+// on the parse node's ACTUAL output (chained, as the fork delivers it) with
+// the WIRE node's metadata, and asserts the single-index audit contract. The
+// id is anchored to an independent reference: Go's crypto/sha256 over the
+// same raw bytes.
 func TestEventsEmit(t *testing.T) {
 	fixtures := map[string][]byte{
 		"new":     mustRead(t, "fixtures/new.json"),
@@ -357,16 +460,10 @@ func TestEventsEmit(t *testing.T) {
 	}
 	for name, raw := range fixtures {
 		t.Run(name, func(t *testing.T) {
-			contract, md := parseOutput(t, raw, map[string]string{})
-			engine := buildEngine(t, eventsScript(t), nil)
-			out, err := engine.Execute(nil, transform.JsTransformFuncName, contract, md, "budva-to-es", "JSON")
-			if err != nil {
-				t.Fatalf("events: %v", err)
-			}
-			res, ok := out.(map[string]interface{})
-			if !ok {
-				t.Fatalf("events returned %T", out)
-			}
+			body, wmd := wireOutput(t, raw, map[string]string{}, "")
+			contract, pmd := parseOutput(t, body, wmd)
+			out := eventsOutput(t, contract, pmd)
+
 			var req struct {
 				Index      string `json:"index"`
 				Operations []struct {
@@ -375,7 +472,7 @@ func TestEventsEmit(t *testing.T) {
 					Doc json.RawMessage `json:"doc"`
 				} `json:"operations"`
 			}
-			if err := json.Unmarshal([]byte(res["msg"].(string)), &req); err != nil {
+			if err := json.Unmarshal([]byte(out["msg"].(string)), &req); err != nil {
 				t.Fatalf("events emit not JSON: %v", err)
 			}
 			if req.Index != "budva-events-v1" {
@@ -390,7 +487,7 @@ func TestEventsEmit(t *testing.T) {
 			}
 			sum := sha256.Sum256(raw)
 			if op.ID != hex.EncodeToString(sum[:]) {
-				t.Errorf("id = %q, want Go-stdlib sha256(raw) = %q", op.ID, hex.EncodeToString(sum[:]))
+				t.Errorf("id = %q, want Go-stdlib sha256(raw) = %q (via metadata.audit_id)", op.ID, hex.EncodeToString(sum[:]))
 			}
 			var doc map[string]interface{}
 			if err := json.Unmarshal(op.Doc, &doc); err != nil {
@@ -418,24 +515,16 @@ func TestEventsRedeliveryIsIdempotent(t *testing.T) {
 	raw := mustRead(t, "fixtures/new.json")
 	var id1, id2 string
 	for i := 0; i < 2; i++ {
-		contract, md := parseOutput(t, raw, map[string]string{})
-		metaStrs := map[string]string{}
-		for k, v := range md {
-			metaStrs[k] = fmt.Sprintf("%v", v)
-		}
-		engine := buildEngine(t, eventsScript(t), nil)
-		out, err := engine.Execute(nil, transform.JsTransformFuncName, contract, metaStrs, "budva-to-es", "JSON")
-		if err != nil {
-			t.Fatalf("events run %d: %v", i, err)
-		}
-		res := out.(map[string]interface{})
+		body, wmd := wireOutput(t, raw, map[string]string{}, "")
+		contract, pmd := parseOutput(t, body, wmd)
+		out := eventsOutput(t, contract, pmd)
 		var req struct {
 			Operations []struct {
 				Op string `json:"op"`
 				ID string `json:"id"`
 			} `json:"operations"`
 		}
-		if err := json.Unmarshal([]byte(res["msg"].(string)), &req); err != nil {
+		if err := json.Unmarshal([]byte(out["msg"].(string)), &req); err != nil {
 			t.Fatalf("run %d: %v", i, err)
 		}
 		if i == 0 {
@@ -451,9 +540,9 @@ func TestEventsRedeliveryIsIdempotent(t *testing.T) {
 
 // TestEventsRejection pins the audit branch's own contract checks: it must
 // fail (-> 400 via the chain) rather than emit a malformed audit doc when the
-// id source or the parser contract is missing.
+// published identity or the parser contract is missing.
 func TestEventsRejection(t *testing.T) {
-	t.Run("missing_rawHex", func(t *testing.T) {
+	t.Run("missing_audit_id", func(t *testing.T) {
 		contract := map[string]interface{}{
 			"index": "budva-messages-v1",
 			"operations": []map[string]interface{}{{
@@ -464,33 +553,93 @@ func TestEventsRejection(t *testing.T) {
 		engine := buildEngine(t, eventsScript(t), nil)
 		_, err := engine.Execute(nil, transform.JsTransformFuncName, contract, map[string]string{}, "budva-to-es", "JSON")
 		if err == nil {
-			t.Fatalf("expected failure without rawHex")
+			t.Fatalf("expected failure without metadata.audit_id")
 		}
 	})
 	t.Run("bad_contract", func(t *testing.T) {
 		contract := map[string]interface{}{"index": "budva-messages-v1"}
 		engine := buildEngine(t, eventsScript(t), nil)
-		_, err := engine.Execute(nil, transform.JsTransformFuncName, contract, map[string]string{"rawHex": hexOf([]byte("{}"))}, "budva-to-es", "JSON")
+		_, err := engine.Execute(nil, transform.JsTransformFuncName, contract, map[string]string{"audit_id": strings.Repeat("a", 64)}, "budva-to-es", "JSON")
 		if err == nil {
 			t.Fatalf("expected failure without operations[0].doc")
 		}
 	})
 }
 
-// TestChainEmbedsTestedScripts is the drift guard: the jsScripts chain.json
-// deploys must be byte-identical to the tested sources (crypto.js+parser.js
-// in the parse node, crypto.js+events.js in the audit node), and the
-// load-bearing route/topology facts (processor order, wait, responseToBody,
-// fork/join wiring, both write nodes on ref://) must hold. If this goes red,
-// the deployed chain no longer runs what the harness tested.
+// TestCryptoSingleOwner is the architecture guard: the crypto capability must
+// live in EXACTLY ONE place at runtime. node_wire embeds crypto.js; parser.js
+// and events.js must contain no crypto symbol (call OR definition) neither as
+// source files nor as embedded in chain.json. This makes "single source" an
+// asserted property instead of something a drift guard keeps in sync.
+func TestCryptoSingleOwner(t *testing.T) {
+	// Source files: wire.js uses crypto; parser.js and events.js do not.
+	wireSrc := readAsset(t, "wire.js")
+	if !strings.Contains(wireSrc, "sha256Bytes(") {
+		t.Errorf("wire.js does not call sha256Bytes — audit_id publication broken")
+	}
+	for _, f := range []string{"parser.js", "events.js"} {
+		src := readAsset(t, f)
+		for _, sym := range cryptoSymbols {
+			if strings.Contains(src, sym) {
+				t.Errorf("%s contains crypto symbol %q — crypto must live only in node_wire", f, sym)
+			}
+		}
+	}
+
+	// chain.json: exactly one embedded script defines sha256Bytes, and it is
+	// node_wire; the other transform nodes embed the pure scripts byte-for-byte.
+	raw := mustRead(t, "chain.json")
+	var chain struct {
+		Metadata struct {
+			Nodes []struct {
+				Id            string `json:"id"`
+				Type          string `json:"type"`
+				Configuration struct {
+					JsScript string `json:"jsScript"`
+				} `json:"configuration"`
+			} `json:"nodes"`
+		} `json:"metadata"`
+	}
+	if err := json.Unmarshal(raw, &chain); err != nil {
+		t.Fatalf("chain.json: %v", err)
+	}
+	owners := 0
+	want := map[string]string{
+		"node_wire":   wireScript(t),
+		"node_parse":  parseScript(t),
+		"node_events": eventsScript(t),
+	}
+	for _, n := range chain.Metadata.Nodes {
+		if n.Type != "jsTransform" {
+			continue
+		}
+		if strings.Contains(n.Configuration.JsScript, "function sha256Bytes") {
+			owners++
+			if n.Id != "node_wire" {
+				t.Errorf("crypto defined in node %s, want node_wire", n.Id)
+			}
+		}
+		if w, ok := want[n.Id]; ok {
+			if n.Configuration.JsScript != w {
+				t.Errorf("node %s jsScript drifted from tested source (%d vs %d bytes)", n.Id, len(n.Configuration.JsScript), len(w))
+			}
+		}
+	}
+	if owners != 1 {
+		t.Fatalf("crypto defined in %d nodes, want exactly 1 (node_wire)", owners)
+	}
+}
+
+// TestChainEmbedsTestedScripts is the drift guard: chain.json must embed the
+// tested scripts byte-identically and the load-bearing route/topology facts
+// (processor order, wait, responseToBody, wire-first entry, fork/join wiring,
+// both write nodes on ref://) must hold. If this goes red, the deployed chain
+// no longer runs what the harness tested.
 func TestChainEmbedsTestedScripts(t *testing.T) {
 	raw := mustRead(t, "chain.json")
 	var chain struct {
 		Metadata struct {
 			Endpoints []struct {
-				Configuration struct {
-					Server string `json:"server"`
-				} `json:"configuration"`
 				Routers []struct {
 					From struct {
 						Path       string   `json:"path"`
@@ -507,9 +656,8 @@ func TestChainEmbedsTestedScripts(t *testing.T) {
 				Id            string `json:"id"`
 				Type          string `json:"type"`
 				Configuration struct {
-					JsScript string `json:"jsScript"`
-					Server   string `json:"server"`
-					Timeout  int    `json:"timeout"`
+					Server  string `json:"server"`
+					Timeout int    `json:"timeout"`
 				} `json:"configuration"`
 			} `json:"nodes"`
 			Connections []struct {
@@ -523,13 +671,17 @@ func TestChainEmbedsTestedScripts(t *testing.T) {
 		t.Fatalf("chain.json: %v", err)
 	}
 
-	// Exactly one router, with the load-bearing from-processor order.
+	// Exactly one router, with the load-bearing from-processor order and the
+	// wire node as the chain entry.
 	if len(chain.Metadata.Endpoints) != 1 || len(chain.Metadata.Endpoints[0].Routers) != 1 {
 		t.Fatalf("expected 1 endpoint with 1 router, got %d/%d", len(chain.Metadata.Endpoints), len(chain.Metadata.Endpoints[0].Routers))
 	}
 	r := chain.Metadata.Endpoints[0].Routers[0]
 	if got := strings.Join(r.From.Processors, ","); got != "toHex,headersToMetadata" {
 		t.Errorf("from.processors = %q, want \"toHex,headersToMetadata\" (order is load-bearing)", got)
+	}
+	if r.To.Path != "budva-to-es:node_wire" {
+		t.Errorf("to.path = %q, want \"budva-to-es:node_wire\" (wire node owns the raw bytes first)", r.To.Path)
 	}
 	if !r.To.Wait {
 		t.Errorf("to.wait = false; the response must reflect the write outcome")
@@ -538,51 +690,41 @@ func TestChainEmbedsTestedScripts(t *testing.T) {
 		t.Errorf("to.processors = %q, want \"responseToBody\"", got)
 	}
 
-	// Each node must be present with the tested script / contract.
-	wantParse := parseScript(t)
-	wantEvents := eventsScript(t)
-	found := map[string]bool{}
+	// Node presence and types (embedding equality is asserted in
+	// TestCryptoSingleOwner to keep one owner per fact).
+	found := map[string]string{}
 	for _, n := range chain.Metadata.Nodes {
+		found[n.Id] = n.Type
 		switch n.Id {
-		case "node_parse":
-			ok := n.Type == "jsTransform" && n.Configuration.JsScript == wantParse
-			found["node_parse"] = ok
-			if !ok {
-				t.Errorf("node_parse: type=%s jsScript %s the tested crypto.js+parser.js", n.Type, driftWord(n.Configuration.JsScript, wantParse))
-			}
-		case "node_events":
-			ok := n.Type == "jsTransform" && n.Configuration.JsScript == wantEvents
-			found["node_events"] = ok
-			if !ok {
-				t.Errorf("node_events: type=%s jsScript %s the tested crypto.js+events.js", n.Type, driftWord(n.Configuration.JsScript, wantEvents))
-			}
 		case "node_write", "node_write_events":
-			ok := n.Type == "elasticsearchWrite" && strings.HasPrefix(n.Configuration.Server, "ref://")
-			found[n.Id] = ok
-			if !ok {
-				t.Errorf("%s: want elasticsearchWrite on ref://, got %s %q", n.Id, n.Type, n.Configuration.Server)
+			if n.Type == "elasticsearchWrite" && !strings.HasPrefix(n.Configuration.Server, "ref://") {
+				t.Errorf("%s: want ref:// server, got %q", n.Id, n.Configuration.Server)
 			}
-		case "node_fork":
-			found["node_fork"] = n.Type == "fork"
 		case "node_join":
-			found["node_join"] = n.Type == "join" && n.Configuration.Timeout >= 45
 			if n.Type == "join" && n.Configuration.Timeout < 45 {
 				t.Errorf("node_join timeout = %d, want >= 45 (above the write timeout)", n.Configuration.Timeout)
 			}
 		}
 	}
-	for _, k := range []string{"node_parse", "node_events", "node_write", "node_write_events", "node_fork", "node_join"} {
-		if !found[k] {
-			t.Fatalf("missing or drifted node: %s", k)
+	for id, typ := range map[string]string{
+		"node_wire": "jsTransform", "node_parse": "jsTransform", "node_events": "jsTransform",
+		"node_write": "elasticsearchWrite", "node_write_events": "elasticsearchWrite",
+		"node_fork": "fork", "node_join": "join",
+	} {
+		if got, ok := found[id]; !ok {
+			t.Fatalf("missing node %s", id)
+		} else if got != typ {
+			t.Errorf("node %s type = %s, want %s", id, got, typ)
 		}
 	}
 
-	// Topology: parse -> fork -> both branches -> join, Success only.
+	// Topology: wire -> parse -> fork -> both branches -> join, Success only.
 	edges := map[[2]string]bool{}
 	for _, c := range chain.Metadata.Connections {
 		edges[[2]string{c.FromId, c.ToId}] = c.Type == "Success"
 	}
 	for _, e := range [][2]string{
+		{"node_wire", "node_parse"},
 		{"node_parse", "node_fork"},
 		{"node_fork", "node_write"},
 		{"node_fork", "node_events"},
@@ -594,18 +736,11 @@ func TestChainEmbedsTestedScripts(t *testing.T) {
 			t.Errorf("missing Success edge %v -> %v", e[0], e[1])
 		}
 	}
-	// No node may sit on a Failure edge: a failed branch is terminal and
-	// fires its own OnEnd so the 400 reaches the response unmapped (spike).
+	// No node may sit on a Failure edge: a failed branch is terminal and fires
+	// its own OnEnd so the 400 reaches the response unmapped (spike).
 	for _, c := range chain.Metadata.Connections {
 		if c.Type != "Success" {
 			t.Errorf("unexpected non-Success connection %v->%v type=%s", c.FromId, c.ToId, c.Type)
 		}
 	}
-}
-
-func driftWord(got, want string) string {
-	if got == want {
-		return "matches"
-	}
-	return "drifted from"
 }
