@@ -1,7 +1,7 @@
 {
   "ruleChain": {
-    "id": "budva",
-    "name": "budva",
+    "id": "budva-to-es",
+    "name": "budva-to-es",
     "root": true,
     "debugMode": false,
     "disabled": false,
@@ -37,7 +37,7 @@
               ]
             },
             "to": {
-              "path": "budva:node_parse",
+              "path": "budva-to-es:node_parse",
               "wait": true,
               "processors": [
                 "responseToBody"
