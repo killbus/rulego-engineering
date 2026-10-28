@@ -46,5 +46,5 @@
 
 ## Gates (all green)
 go test ./... + -race (8 top-level cases incl. the drift guard),
-gofmt -l empty (example + spike), go vet, spike go test (real HTTP),
+gofmt -l empty, go vet, the spike go test (real HTTP, run at design time),
 validate.py, JSON lint on chain + both mappings + fixtures.

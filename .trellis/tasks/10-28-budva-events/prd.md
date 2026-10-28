@@ -42,8 +42,9 @@ Single chain, in-chain `fork -> [messages, events] -> join` (option A, decided
    one-branch failure = fast 400 with the failed node's reason; the failed
    branch may still be written on the other side, no rollback exists).
 7. `.trellis/tasks/10-28-budva-events/` — task docs + the fork/join spike
-   (spike/ module, run in CI as the runtime-semantics anchor for the
-   chain's response contract).
+   (research/forkjoin-spike/: one-time design-time verification of the
+   response contract against pinned rulego v1.0.0; re-runnable, not a
+   standing CI regression).
 
 ## Acceptance
 - Harness green under goja: parser emits messages contract + rawHex;

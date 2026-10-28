@@ -20,9 +20,10 @@ Single terminal = the join, so the endpoint's response OnEnd fires exactly
 once (deterministic). Without the join both writes would be terminals and
 the response body would be whichever branch's OnEnd ran last.
 
-## Spike-verified runtime facts (spike/ module, real engine + real HTTP)
-Anchors are the v1.0.0 source plus OBSERVED behavior (the spike fails the
-build if the response contract changes):
+## Spike-verified runtime facts (research/forkjoin-spike/, real engine + real HTTP)
+Anchors are the v1.0.0 source plus OBSERVED behavior (the spike fails if the
+response contract changes; it pins rulego v1.0.0, so it is task research
+evidence, not a standing regression):
 1. fork (components/common/fork_node.go) broadcasts the SAME msg to all
    Success edges. Both branches therefore receive the parser's full
    messages contract; the audit branch needs no extra passthrough fields
@@ -77,6 +78,7 @@ gate.
   branch's summary). Alert on non-2xx as in Phase-1.
 
 ## Commit boundaries (planned)
-C1 task docs (this dir) + spike module (the runtime-semantics anchor).
+C1 task docs (this dir) + the fork/join spike under research/ (one-time
+design-time verification, not a CI job).
 C2 events.js + parser.js rawHex line + harness extension (goja, RFC-anchored).
 C3 chain.json rewire + mappings/budva-events-v1.json + README deploy update.

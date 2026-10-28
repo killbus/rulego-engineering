@@ -32,8 +32,9 @@ POST /budva-to-es  (application/json, optional X-Budva-Signature)
   `_id` and becomes an ES 409 duplicate, which the plugin classifies as success
   (idempotent, no second doc). The audit doc is `{event, occurred_at, chat_id,
   message_id, received_at}`: a delivery log, not a second copy of message text.
-- Response contract (spike-verified, see `spike/`): the join is the chain's
-  single terminal, so the response is deterministic. 200 body = the joined
+- Response contract (verified by the task's fork/join spike, see "Audit
+  index behavior" below): the join is the chain's single terminal, so the
+  response is deterministic. 200 body = the joined
   array of BOTH write summaries (messages + events); one-branch failure = a
   **fast 400** with the failed node's reason (the failed branch is terminal and
   fires its own OnEnd; it does not wait the join timeout). A 400 does not roll
@@ -69,7 +70,6 @@ contract:
 | `mappings/budva-messages-v1.json` | current-state index body, `dynamic: false` |
 | `mappings/budva-events-v1.json` | audit index body, `dynamic: false` |
 | `fixtures/` | `new.json` / `edited.json` / `deleted.json`, real-shape samples |
-| `spike/` | engine-level proof of the response contract (real rulego v1.0.0 + real HTTP endpoint + a write node mirroring the plugin's tell contract); runs in CI |
 
 ## Deployment
 
@@ -154,7 +154,6 @@ curl -i -X POST "$RULEGO:9090/budva-to-es" \
 ```bash
 cd examples/budva-to-es
 go test ./...          # + go test -race ./...
-go test ./spike/...    # engine-level response-contract proof (real HTTP)
 ```
 
 Covers: RFC 6234 digests under goja, Go-stdlib-referenced HMAC (incl. 64/65-
@@ -165,14 +164,16 @@ and that `chain.json` embeds BOTH tested scripts byte-identically with the
 load-bearing route/topology facts (processor order, `wait:true`,
 `responseToBody`, fork/join wiring, `ref://` servers, join timeout). A
 mutation check confirmed the crypto harness and the drift guard fail when the
-code or the embedded script changes. The spike (separate module, real engine +
-real HTTP endpoint) is the runtime anchor for the response contract stated
-in "Audit index behavior" below.
+code or the embedded script changes. The response contract stated in "Audit
+index behavior" below was established by the task's fork/join spike (task
+research: `.trellis/tasks/10-28-budva-events/research/forkjoin-spike/`, real
+engine + real HTTP endpoint) — a one-time design-time verification against
+pinned rulego v1.0.0, not a standing regression of this example.
 
 ## Audit index behavior (Phase-2, shipped)
 
 The fork/join + `wait` + response interaction was verified before this shipped
-(the `spike/` module, run in CI, asserts the contract as a test):
+by the task's fork/join spike (task research, `.trellis/tasks/10-28-budva-events/research/forkjoin-spike/`):
 
 - Both writes are reflected in one deterministic 200 (the join is the single
   terminal; the response waits for both — observed latency ≥ the slower write).

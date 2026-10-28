@@ -1,4 +1,4 @@
-module github.com/killbus/rulego-engineering/examples/budva-to-es/spike
+module forkjoin-spike
 
 go 1.25.0
 

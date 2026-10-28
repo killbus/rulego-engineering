@@ -38,21 +38,3 @@ jobs:
       - name: go test -race
         working-directory: examples/budva-to-es
         run: go test -race ./...
-  budva-to-es-spike:
-    runs-on: ubuntu-latest
-    # Engine-level anchor for the chain's response contract: real rulego
-    # v1.0.0 engine + real HTTP endpoint observing fork/join + wait:true +
-    # responseToBody (200 = joined array of both writes; one-branch failure
-    # = fast 400). A red spike means the deployed chain's response semantics
-    # no longer match what the README states.
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.25"
-      - name: go test
-        working-directory: examples/budva-to-es/spike
-        run: go test ./...
-      - name: go test -race
-        working-directory: examples/budva-to-es/spike
-        run: go test -race ./...
