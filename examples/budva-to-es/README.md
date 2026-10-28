@@ -2,9 +2,10 @@
 
 Deploys the generic `elasticsearchWrite` node (from `killbus/rulego-elasticsearch`)
 against the real Budva push contract (schema v2) using **only RuleGo-native
-content**: one `jsTransform` node (embedded script below), one write node, one
-index. No Budva semantics are compiled into the plugin, and nothing under this
-directory is imported by the plugin package.
+content**: two `jsTransform` nodes (embedded scripts below), two write nodes,
+two indices — the current-state index and the append-only audit index — joined
+before the HTTP response. No Budva semantics are compiled into the plugin, and
+nothing under this directory is imported by the plugin package.
 
 ## What it does
 
@@ -12,17 +13,31 @@ directory is imported by the plugin package.
 POST /budva-to-es  (application/json, optional X-Budva-Signature)
   → toHex + headersToMetadata   (raw body → hex carrier; headers → metadata)
   → jsTransform budvaParse      (HMAC gate, strict schema v2 validation,
-                                 _id derivation, tombstone for deleted)
-  → elasticsearchWrite          (budva-messages-v1, op index, LWW)
-  → 200 ack  |  400 + reason    (Budva never retries; the code is the signal)
+                                 _id derivation, tombstone for deleted;
+                                 stamps metadata.rawHex = the hex raw body)
+  → fork
+      ├→ elasticsearchWrite     (budva-messages-v1, op index, LWW)
+      └→ jsTransform budvaEvents (audit projection: _id = sha256(raw body))
+           → elasticsearchWrite  (budva-events-v1, op create, append-only)
+  → join (timeout 45s)
+  → 200 + joined ack  |  400 + reason  (Budva never retries; the code is the signal)
 ```
 
 - `budva-messages-v1` = current state per message, `_id = <chat_id>:<message_id>`,
   unconditional overwrite (`op: index`), ordering fact is `occurred_at`.
 - `deleted` events write a `tombstone: true` doc (the write node cannot issue
   deletes). Reconstruct live messages with `{"query":{"bool":{"must_not":{"term":{"tombstone":true}}}}}`.
-- Audit index (`budva-events-v1`, append-only, `_id = sha256(raw)`): **Phase-2**,
-  see "Phase-2" below.
+- `budva-events-v1` = append-only delivery log, one doc per delivery,
+  `_id = sha256(exact raw body)`, `op: create` — a redelivered body is the same
+  `_id` and becomes an ES 409 duplicate, which the plugin classifies as success
+  (idempotent, no second doc). The audit doc is `{event, occurred_at, chat_id,
+  message_id, received_at}`: a delivery log, not a second copy of message text.
+- Response contract (spike-verified, see `spike/`): the join is the chain's
+  single terminal, so the response is deterministic. 200 body = the joined
+  array of BOTH write summaries (messages + events); one-branch failure = a
+  **fast 400** with the failed node's reason (the failed branch is terminal and
+  fires its own OnEnd; it does not wait the join timeout). A 400 does not roll
+  back the other branch: fork/join is not a transaction.
 
 ## Loss model (read this before deploying)
 
@@ -33,9 +48,12 @@ contract:
   failure), **not** reversed updates. Reversal can only come from a producer
   restart whose buffer held an older edit.
 - The chain cannot make Budva retry: 4xx/5xx are terminal for the sender.
-  What is dropped is gone from the current-state index. The `occurred_at`
-  ordering plus the producer's own observation log is the reconciliation path;
-  the Phase-2 audit index makes that reconciliation a query.
+  What is dropped is gone from the current-state index. Reconciliation: the
+  `occurred_at` ordering plus the producer's own observation log, now backed by
+  a query — the audit index holds every delivery that reached the chain, so a
+  missing update is detectable by diffing the audit log against the producer's
+  observation record. A delivery that failed the audit write but succeeded the
+  messages write (or vice versa) is visible as the 400 alert.
 - **Do not** put durability guarantees on this pipeline. It is a mirror, not a
   system of record.
 
@@ -44,21 +62,31 @@ contract:
 | File | Role |
 | --- | --- |
 | `crypto.js` | vendored pure-JS SHA-256/HMAC-SHA256 + hex/UTF-8 codec (RFC 6234/2104), no goja builtins |
-| `parser.js` | the transform body: HMAC gate over exact wire bytes, strict schema validation, contract emit |
-| `parser_test.go` | goja harness: runs the **deployed** script through rulego v1.0.0's `GojaJsEngine` with the node's exact wrapper; anchors = RFC 6234 digests, Go-stdlib HMAC reference, plugin message contract; includes the chain-embedding drift guard |
-| `chain.json` | rule chain: endpoint + jsTransform + elasticsearchWrite; `jsScript` is byte-identical to `crypto.js + parser.js` (guard-tested) |
-| `mappings/budva-messages-v1.json` | `dynamic: false` index body |
+| `parser.js` | parse node body: HMAC gate over exact wire bytes, strict schema validation, messages contract emit, `metadata.rawHex` stamp |
+| `events.js` | audit node body: pure projection of the parser contract, `_id = sha256(raw)` from `metadata.rawHex`, `received_at` = server receipt time |
+| `parser_test.go` | goja harness: runs the **deployed** scripts through rulego v1.0.0's `GojaJsEngine` with the node's exact wrapper; anchors = RFC 6234 digests, Go-stdlib HMAC/SHA-256 references, the plugin message contract, redelivery idempotency; includes the chain-embedding + topology drift guard |
+| `chain.json` | rule chain: endpoint + fork + two transform nodes + two write nodes + join; each `jsScript` is byte-identical to its tested source (guard-tested) |
+| `mappings/budva-messages-v1.json` | current-state index body, `dynamic: false` |
+| `mappings/budva-events-v1.json` | audit index body, `dynamic: false` |
 | `fixtures/` | `new.json` / `edited.json` / `deleted.json`, real-shape samples |
+| `spike/` | engine-level proof of the response contract (real rulego v1.0.0 + real HTTP endpoint + a write node mirroring the plugin's tell contract); runs in CI |
 
 ## Deployment
 
-### 1. Index
+### 1. Indices
 
 ```bash
 curl -X PUT "$ES/budva-messages-v1" \
   -H 'Content-Type: application/json' \
   --data @mappings/budva-messages-v1.json
+
+curl -X PUT "$ES/budva-events-v1" \
+  -H 'Content-Type: application/json' \
+  --data @mappings/budva-events-v1.json
 ```
+
+The audit index grows with delivery volume (one doc per delivery, small doc).
+Size it (and, later, ILM) like a log, not like the current-state index.
 
 ### 2. Shared Elasticsearch node (node pool)
 
@@ -126,20 +154,34 @@ curl -i -X POST "$RULEGO:9090/budva-to-es" \
 ```bash
 cd examples/budva-to-es
 go test ./...          # + go test -race ./...
+go test ./spike/...    # engine-level response-contract proof (real HTTP)
 ```
 
 Covers: RFC 6234 digests under goja, Go-stdlib-referenced HMAC (incl. 64/65-
 byte key paths), schema strictness, the six HMAC gate cases, the emitted
-plugin contract, and that `chain.json` embeds exactly the tested script with
-the load-bearing route facts (processor order, `wait:true`, `responseToBody`,
-`ref://` server). A mutation check confirmed both the crypto harness and the
-drift guard fail when the code or the embedded script changes.
+plugin contracts (messages LWW + audit create), the audit `_id` against a
+Go-stdlib SHA-256 reference, redelivery idempotency (same raw => same id),
+and that `chain.json` embeds BOTH tested scripts byte-identically with the
+load-bearing route/topology facts (processor order, `wait:true`,
+`responseToBody`, fork/join wiring, `ref://` servers, join timeout). A
+mutation check confirmed the crypto harness and the drift guard fail when the
+code or the embedded script changes. The spike (separate module, real engine +
+real HTTP endpoint) is the runtime anchor for the response contract stated
+in "Audit index behavior" below.
 
-## Phase-2 (not shipped)
+## Audit index behavior (Phase-2, shipped)
 
-`budva-events-v1` audit index: append-only, `op: create`, `_id = sha256(raw)`,
-so a redelivered body is an idempotent duplicate (409 → success). Requires a
-`fork → [parseEvents→writeEvents, parseMessages→writeMessages] → join` topology
-(v1.0.0 ships `fork`/`join` natively); the fork/join + `wait` + response
-interaction is to be verified end-to-end before this lands. The mappings for
-the audit index will follow the same `dynamic: false` discipline.
+The fork/join + `wait` + response interaction was verified before this shipped
+(the `spike/` module, run in CI, asserts the contract as a test):
+
+- Both writes are reflected in one deterministic 200 (the join is the single
+  terminal; the response waits for both — observed latency ≥ the slower write).
+- A failed write is NOT masked: the failed branch is terminal, so the response
+  is 400 with the failed node's reason immediately (~50ms observed, not the
+  join timeout). The surviving branch may still be written; there is no
+  rollback, and a redelivery of the same body is idempotent on the audit side
+  (409 → duplicate → success).
+- Alert on non-2xx from `/budva-to-es` as the loss signal; a 400 naming
+  `node_write_events` means the audit side missed while messages may have
+  landed, and vice versa. Reconcile via the audit log + producer observation
+  record.

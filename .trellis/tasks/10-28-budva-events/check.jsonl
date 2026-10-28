@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/guides/commit-gate.md", "reason": "Boundary commit discipline: one coherent first-principles change, path ownership, English present-tense message."}
+{"file": ".trellis/spec/guides/rulego-engineering.md", "reason": "Evidence baseline: anchor to rulego v1.0.0 module source, not memory."}

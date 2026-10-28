@@ -1,0 +1,16 @@
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 1
+  },
+  "mappings": {
+    "dynamic": "false",
+    "properties": {
+      "event":           { "type": "keyword" },
+      "occurred_at":     { "type": "date", "format": "strict_date_optional_time||epoch_millis" },
+      "received_at":     { "type": "date", "format": "strict_date_optional_time||epoch_millis" },
+      "chat_id":         { "type": "long" },
+      "message_id":      { "type": "long" }
+    }
+  }
+}
