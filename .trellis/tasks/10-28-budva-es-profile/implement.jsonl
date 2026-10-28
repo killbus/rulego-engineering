@@ -1,0 +1,4 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/guides/commit-gate.md", "reason": "Boundary commit discipline: one coherent first-principles change, path ownership, English present-tense message."}
+{"file": ".trellis/spec/guides/rulego-plugin-delivery.md", "reason": "Plugin delivery + runtime-verification practice the example must compose with (ref:// shared node, no plugin-package import)."}
+{"file": ".trellis/spec/guides/rulego-engineering.md", "reason": "Evidence baseline + knowledge boundary: anchor to rulego v1.0.0 module source, not memory."}

@@ -1,0 +1,23 @@
+{
+  "schema_version": 2,
+  "event": "edited",
+  "occurred_at": "2026-01-02T03:05:10Z",
+  "message": {
+    "chat_id": 101,
+    "message_id": 1,
+    "sender": {
+      "type": "user",
+      "user_id": 42
+    },
+    "sent_at": "2026-01-02T03:04:04Z",
+    "edited_at": "2026-01-02T03:05:09Z",
+    "content": {
+      "type": "message",
+      "formatted_text": {
+        "text": "hello 世界 café ☃ (edited)",
+        "entities": []
+      }
+    },
+    "has_sensitive_content": false
+  }
+}

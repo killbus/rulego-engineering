@@ -1,0 +1,81 @@
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 1
+  },
+  "mappings": {
+    "dynamic": "false",
+    "properties": {
+      "event":           { "type": "keyword" },
+      "occurred_at":     { "type": "date", "format": "strict_date_optional_time||epoch_millis" },
+      "chat_id":         { "type": "long" },
+      "message_id":      { "type": "long" },
+      "tombstone":       { "type": "boolean" },
+      "sent_at":         { "type": "date", "format": "strict_date_optional_time||epoch_millis" },
+      "edited_at":       { "type": "date", "format": "strict_date_optional_time||epoch_millis" },
+      "has_sensitive_content": { "type": "boolean" },
+      "restriction_reason":    { "type": "keyword" },
+      "message_thread_id":     { "type": "long" },
+      "sender": {
+        "properties": {
+          "type":    { "type": "keyword" },
+          "user_id": { "type": "long" },
+          "chat_id": { "type": "long" }
+        }
+      },
+      "content": {
+        "properties": {
+          "type":         { "type": "keyword" },
+          "source_type":  { "type": "keyword" },
+          "show_caption_above_media": { "type": "boolean" },
+          "has_spoiler":  { "type": "boolean" },
+          "formatted_text": {
+            "properties": {
+              "text": {
+                "type": "text",
+                "fields": { "keyword": { "type": "keyword", "ignore_above": 1024 } }
+              },
+              "entities": {
+                "type": "nested",
+                "properties": {
+                  "offset": { "type": "integer" },
+                  "length": { "type": "integer" },
+                  "type":   { "type": "keyword" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "reply_to": {
+        "properties": {
+          "type":       { "type": "keyword" },
+          "chat_id":    { "type": "long" },
+          "message_id": { "type": "long" }
+        }
+      },
+      "forward": {
+        "properties": {
+          "sent_at": { "type": "date", "format": "strict_date_optional_time||epoch_millis" },
+          "origin": {
+            "properties": {
+              "type":            { "type": "keyword" },
+              "sender_user_id":  { "type": "long" },
+              "sender_name":     { "type": "keyword" },
+              "sender_chat_id":  { "type": "long" },
+              "author_signature":{ "type": "keyword" },
+              "chat_id":         { "type": "long" },
+              "message_id":      { "type": "long" }
+            }
+          }
+        }
+      },
+      "delete": {
+        "properties": {
+          "is_permanent": { "type": "boolean" },
+          "from_cache":   { "type": "boolean" }
+        }
+      }
+    }
+  }
+}
