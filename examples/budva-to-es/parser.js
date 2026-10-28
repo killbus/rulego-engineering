@@ -53,6 +53,11 @@ try {
     doc.restriction_reason = (typeof m.restriction_reason === 'string') ? m.restriction_reason : '';
   }
 
+  // rawHex = the toHex hex carrier of the exact wire bytes. The audit branch
+  // derives its id (sha256 of the raw body) from this; the parser stays the
+  // single owner of validation and of what the bytes mean.
+  metadata.rawHex = msg;
+
   return {
     msg: JSON.stringify({
       index: 'budva-messages-v1',
