@@ -36,7 +36,7 @@ deployed (HTTP endpoint -> chain), not against an invented API.
    `tombstone:true` for deleted).
 4. `examples/budva-to-es/chain.json` — endpoint(`/budva-to-es`, `toHex`+
    `headersToMetadata`, wait:true) -> jsTransform -> elasticsearchWrite(ref) ->
-   Success 200 ack / Error 400|401 reason.
+   Success 200 ack; 400 with the reason otherwise (responseToBody).
 5. `examples/budva-to-es/mappings/budva-messages-v1.json` — `dynamic:false` current-state
    mapping (ids long, times date, discriminators keyword, entities nested,
    tombstone bool).
