@@ -1,0 +1,13 @@
+{
+  "schema_version": 2,
+  "event": "deleted",
+  "occurred_at": "2026-01-02T03:06:00Z",
+  "message": {
+    "chat_id": 101,
+    "message_id": 1,
+    "delete": {
+      "is_permanent": true,
+      "from_cache": false
+    }
+  }
+}
