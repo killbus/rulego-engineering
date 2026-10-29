@@ -100,6 +100,13 @@ curl -X PUT "$ES/budva-events-v1" \
   --data @mappings/budva-events-v1.json
 ```
 
+`content.formatted_text.text` indexes with `ik_max_word` and searches with
+`ik_smart`, so the cluster needs the Elasticsearch IK analysis plugin
+(verify with `GET /_analyze`, body `{"analyzer":"ik_max_word","text":"测试"}`).
+Analyzers are fixed at index creation: create the index from this mapping
+before the first write — an auto-created index gets dynamic inference and
+cannot switch analyzers without a reindex.
+
 The audit index grows with delivery volume (one doc per delivery, small doc).
 Size it (and, later, ILM) like a log, not like the current-state index.
 
