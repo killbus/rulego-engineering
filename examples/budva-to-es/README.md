@@ -90,6 +90,13 @@ contract:
 
 ### 1. Indices
 
+Create both indices from the mapping files **before the first write**, in
+either retention mode below. The chain only writes index names and never
+creates an index, so anything auto-created later gets dynamic inference and
+loses `dynamic: false` and (under mode B) the lifecycle wiring.
+
+#### Mode A — single index, full history (minimal)
+
 ```bash
 curl -X PUT "$ES/budva-messages-v1" \
   -H 'Content-Type: application/json' \
@@ -100,15 +107,60 @@ curl -X PUT "$ES/budva-events-v1" \
   --data @mappings/budva-events-v1.json
 ```
 
+The current-state index keeps the latest version of every message ever
+delivered; the audit index grows without bound (one doc per delivery, small
+doc) — size it (and, later, ILM) like a log.
+
+#### Mode B — rolling retention (ILM rollover + delete)
+
+Keep only a window of deliveries (e.g. 7 days): each logical index is an
+**alias** that always points at the current write index; ILM rolls the
+backing indices over daily and deletes them after the window. The chain is
+unchanged — it writes the alias.
+
+1. ILM policy — rollover after 1 day, delete after 7 days:
+
+```bash
+curl -X PUT "$ES/_ilm/policy/budva-7d" -H 'Content-Type: application/json' \
+  -d '{"policy":{"phases":{
+    "hot":    {"min_age":"0ms","actions":{"rollover":{"max_age":"1d"}}},
+    "delete": {"min_age":"7d","actions":{"delete":{}}}}}}'
+```
+
+2. Backing indices — the mapping file's `settings` plus the three lifecycle
+   lines, and the alias named after the logical index:
+
+```bash
+curl -X PUT "$ES/budva-messages-v1-000001" -H 'Content-Type: application/json' -d '{
+  "aliases":  { "budva-messages-v1": { "is_write_index": true } },
+  "settings": { "number_of_replicas": 0,
+                "index.lifecycle.name": "budva-7d",
+                "index.lifecycle.rollover_alias": "budva-messages-v1" },
+  "mappings": <the "mappings" key of mappings/budva-messages-v1.json>
+}'
+# same for budva-events-v1-000001 / alias budva-events-v1
+```
+
+3. Verify: `GET /_cat/aliases/budva-*v` (both aliases, `is_write_index`
+   true) and `GET /_ilm/explain/budva-messages-v1-000001` (hot phase, next
+   rollover time). The first rollover produces `-000002` and moves the alias.
+
+Migration A→B: delete the bare index and create the backing back-to-back. If
+a write lands in the gap, ES auto-creates the bare index and the backing PUT
+fails with `alias ... self-conflicts with index name`; delete + create once
+more and the alias absorbs all later traffic.
+
+Semantics under mode B: an old version of a message dies with the backing
+index that holds it; an edit after rollover lands in the current write
+index. `GET /{alias}/_doc/{id}` is unaffected, but `_search` can return
+several versions of one `_id` across backing indices — to read the current
+state, sort by `occurred_at` desc with `"collapse": {"field": "_id"}`.
+
 `content.formatted_text.text` indexes with `ik_max_word` and searches with
 `ik_smart`, so the cluster needs the Elasticsearch IK analysis plugin
 (verify with `GET /_analyze`, body `{"analyzer":"ik_max_word","text":"测试"}`).
-Analyzers are fixed at index creation: create the index from this mapping
-before the first write — an auto-created index gets dynamic inference and
-cannot switch analyzers without a reindex.
-
-The audit index grows with delivery volume (one doc per delivery, small doc).
-Size it (and, later, ILM) like a log, not like the current-state index.
+Analyzers are fixed at index creation, which is why both modes create the
+index from the mapping file first.
 
 ### 2. Shared Elasticsearch node (node pool)
 
