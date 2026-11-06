@@ -42,14 +42,55 @@ carry message context, but durable identity, bounded shared work, cleanup, and
 concurrency coordination need one explicit owner rather than incidental node
 memory.
 
+### Terminal resolution belongs to the owner
+
+Every exit from an operation that resolves waiters must end in a defined
+terminal state. Once the owner has written or committed durable bytes, this is
+not optional: the operation can still fail after the point where success looked
+guaranteed, and a lease expiry wiping state later will report "unknown" for
+something the owner knows deterministically.
+
+- one owner resolves the outcome — success for all waiters, or one failure kind
+  for all waiters; waiters must never depend on expiry to learn the outcome;
+- the failure kind is the owner's own semantic kind and survives status mapping,
+  so a waiter is not told "timeout" or "canceled" for a failure the owner could
+  name, and the publishing endpoint does not reclassify it;
+- lease, TTL, and inactivity expiry are liveness guards, not terminal
+  resolution. A waiter that outlives its lease is an owner defect, not a policy
+  choice;
+- cleanup and compensation are queued before the outcome is published and are
+  scoped to the generation that actually failed, so a peer cannot regenerate it
+  back to success;
+- a graph that can discover a failure only after the success edge has fired must
+  not depend on a failure edge for that case. The owner closes the loop.
+
+#### Wrong
+
+```text
+commit() -> capacity rejected -> return error to this caller
+
+# the pending generation keeps its state; every other waiter blocks until the
+# lease expires and then reports "canceled by context"
+```
+
+#### Correct
+
+```text
+commit() -> capacity rejected -> retire the generation, then publish failure
+
+# the direct caller keeps its own error, every waiter receives the same
+# terminal failure kind, and the next caller starts a fresh generation
+```
+
 ## RuleGo ecosystem applications
 
 - Provider resolution is graph or adapter policy and produces a normalized
   source description. Provider-specific arguments remain at that boundary.
 - Generic ffmpeg-over-ip invocation remains an independent service capability;
   the RuleGo plugin exposes it without absorbing unrelated media policy.
-- Resource publication owns stable identity and readiness lifecycle; byte
-  serving remains the HTTP/static-resource owner's responsibility.
+- Resource publication owns stable identity and readiness lifecycle, and must
+  resolve every waiter terminally; byte serving remains the HTTP/static-resource
+  owner's responsibility.
 - Indexed media production starts from normalized source data and owns a bounded
   indexed output member. Provider resolution and final manifest presentation
   remain composable concerns.
