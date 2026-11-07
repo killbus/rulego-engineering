@@ -1,0 +1,71 @@
+{
+  "verdict": "PASS",
+  "done": true,
+  "round": 1,
+  "role": "Code Reviewer",
+  "base_commit": "cf2d5d24",
+  "design_sha256": "28742D5547C83FEE6C3007891B6910B46454451E626C5837909F345E0BBB03B2",
+  "checks_run": [
+    "python -B -W error::ResourceWarning -m unittest discover -s .trellis/tasks/11-06-two-viewer-runtime-gate/research -p test_two_viewer.py -v: 37 tests, OK, ResourceWarning as error",
+    "python -B -c compile() syntax check for run-two-viewer.py and test_two_viewer.py: compile ok both",
+    "SHA-256 recomputed: run-two-viewer.py = CE420569D4F9040EF90A47F589BA79284BF7B824D433D5D80E9C085B16B168C4; test_two_viewer.py = 6D855B9AC55FD71040679F921D3D4D759EF1CD9D3CD16CC1AD00B6243DDE8276",
+    "SHA-256 recomputed frozen single-viewer harness: run-single-baseline.py = BA6C23FBE69FB012211F0C31F615837738C3AD3F66E8B6B9F6B19A9E13A45A26; test_single_baseline.py = E8943DC330C2F2B8B2DF6363B2D82A3550C56FB76A90ADBBE5BAD4E83339206A (unchanged)",
+    "No __pycache__ written under the 11-06 task (bytecode disabled)",
+    "Preflight parser probed offline against production-chain-candidate.json, deployed-chain-before.json, deployed-chain-before-latest.json and synthetic component envelopes; no live API call was made"
+  ],
+  "criteria": {
+    "exactly_two_owned_players_and_one_shared_poller": "met - run() spawns one --_poll-worker helper Popen plus exactly two player Popens; tests assert popen.call_count == 3 for the healthy path and single-poller behavior on aborts",
+    "preflight_before_spawn": "met - component/chain preflight and all 22-node initial-tail baseline run before any player Popen; preflight mismatch and initial-tail failure write aborted evidence with playersSpawned=0",
+    "per_viewer_isolation": "met - distinct VIEWER-A/VIEWER-B stdout markers, separate temp logs, separate PlayerEvidence; tests assert progress and log signals never cross-assign",
+    "owned_pid_only_cleanup": "met - taskkill /PID <owned-pid> /T /F with direct-child kill fallback; never image-name targeting; normal, barrier, deadline and interruption paths covered by tests",
+    "partial_evidence": "met - finally writes summary.json after interruption/deadline/failure; aborted.json for preflight/initial-telemetry/launch aborts; tests cover all four stop classes",
+    "no_ac5_convertible_result": "met - summary top-level keys are only scope/preflight/launch/viewers/server/crossViewer/limits/collectionStatus; tests assert no 'pass' or 'ac5' top-level key; scope is two_viewer_same_program_different_positions_not_AC5",
+    "single_viewer_harness_and_prior_evidence_preserved": "met - frozen hashes verified and asserted in tests; no writes into 11-05 runtime directories; prior captures and planning artifacts untouched"
+  },
+  "blocking_findings": [],
+  "non_blocking_findings": [
+    {
+      "id": "code-review-1",
+      "severity": "non_blocking",
+      "summary": "parse_component_policy selects the first type==resourceOrigin candidate without enforcing that exactly one resourceOrigin component exists or that the chosen component is the ref://resource-origin owner referenced by the chain. If the component registry ever returns multiple resourceOrigin components with divergent configurations/versions, preflight could accept a component that is not the deployed owner.",
+      "evidence": "run-two-viewer.py parse_component_policy: next(value for value in components if value.get('type')=='resourceOrigin'); no count or ref-identity binding; offline probe 'two_ro_first_ok_second_bad' accepted the first matching entry while a second divergent entry was present. Current deployment evidence shows a single shared owner (components count 1, pipeline-fact-review 'a single shared ref://resource-origin owner'), so this is not exploitable today.",
+      "resolution": "Optional hardening: require exactly one resourceOrigin candidate (or a declared component id/name) and/or bind the selected component to the chain's ref://resource-origin root before accepting preflight."
+    },
+    {
+      "id": "code-review-2",
+      "severity": "non_blocking",
+      "summary": "preflight.json records existingTraffic.knownLocalMpvProcesses: 0 as a fixed constant even though the collector never enumerates local mpv processes. This can be misread as an observed fact rather than an assertion.",
+      "evidence": "preflight() record: 'existingTraffic': {'knownLocalMpvProcesses': 0, 'otherHosts': 'unknown'}; no mpv enumeration exists in the collector.",
+      "resolution": "Label the field as 'not_measured'/null or add a real local-process scan; otherwise the evidence reviewer should read it as an assertion, not a measurement."
+    },
+    {
+      "id": "code-review-3",
+      "severity": "non_blocking",
+      "summary": "crossViewer.requestedRegions for viewer-b carries a placeholder requestedIndex ('derived from runtime segment timeline') instead of the numeric index derived from start 600 that design section 8 describes.",
+      "evidence": "cross_viewer_summary() viewer-b requestedIndex is a string; the segment index for 600 s must still be derived by the evidence reviewer from open counts/timeline.",
+      "resolution": "Either compute and record the derived index in the summary or keep the placeholder but explicitly mark the derivation as review-time work (currently implied by the string)."
+    },
+    {
+      "id": "code-review-4",
+      "severity": "non_blocking",
+      "summary": "readback_policy records nodeCount/connectionCount but does not hard-gate them against the approved 52/69 shape; a chain that changed elsewhere while preserving version, roots and both TTLs would still pass preflight. chainSha256 is preserved so the change remains detectable in evidence.",
+      "evidence": "readback_policy() sets policy['nodeCount']/'connectionCount' for the record; preflight checks do not compare them to 52/69. Offline probe confirmed acquire/root checks fire on TTL and root mismatches, which are the gated state values required by the design.",
+      "resolution": "Optional: assert nodeCount==52 and connectionCount==69 in checks, or document that non-TTL/version/root chain drift is review-time detectable via chainSha256."
+    },
+    {
+      "id": "code-review-5",
+      "severity": "non_blocking",
+      "summary": "The live /api/v1/components envelope and the presence of configuration.maxRetainedBytes at the parser's expected path remain unconfirmed offline. The parser is fail-closed on unknown envelopes (e.g. archived {resourceOriginVersion, nodeCount, configuration, globalNames} summary shape returns type/version None and aborts), so the risk is an unnecessary abort, not a false acceptance.",
+      "evidence": "Offline probe of old_summary_shape returned type=None version=None; wrapped_data also returned None/None. Implementer's own remaining question lists the deployed component endpoint envelope as an open item.",
+      "resolution": "Live preflight must confirm the actual /api/v1/components body shape before the gate run; if it differs from the handled envelopes, the parser or the endpoint expectation must be reconciled first."
+    }
+  ],
+  "residual_unknowns": [
+    "Real mpv stdout/log flushing, final-line ordering, and Windows taskkill /T tree containment are runtime behaviors not proven offline (mocked in tests).",
+    "Live /api/v1/components envelope and maxRetainedBytes location are unconfirmed; parser is fail-closed on unknown envelopes.",
+    "Server/client clock offset, cross-client traffic, other-host inventory, retainedBytes, and actual instrumentation perturbation remain unknown until an independently reviewed live run.",
+    "Final-tail capture can miss rows racing helper shutdown; collectionStatus and polls.jsonl flags make that an explicit incomplete dimension, not evidence of absence.",
+    "The 359 s overlap/progress floor share one bound and are coherent only under the stated approximately-1x playback-rate assumption."
+  ],
+  "scope_honesty": "This review approves the task-local two-viewer diagnostic harness and offline evidence for a live gate. It does not approve a third viewer, production edits, TTL/budget/quality changes, or any AC5 closure; parent AC5 remains incomplete until the three required three-viewer scenarios pass separately."
+}

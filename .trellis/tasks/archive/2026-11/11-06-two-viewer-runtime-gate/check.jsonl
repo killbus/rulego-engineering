@@ -1,0 +1,8 @@
+{"file": ".trellis/spec/guides/rulego-engineering.md", "reason": "Normative evidence and ownership boundaries for review."}
+{"file": ".trellis/spec/guides/rulego-runtime-verification.md", "reason": "Runtime gate dimensions the review must verify separately."}
+{"file": ".trellis/spec/guides/rulego-delivery-workflow.md", "reason": "Completion-audit and preservation requirements."}
+{"file": ".trellis/tasks/11-05-hls-friendly-concurrency/research/single-baseline-collector-notes.md", "reason": "Reviewed invariants the new collector must preserve."}
+{"file": ".trellis/tasks/11-05-hls-friendly-concurrency/research/two-source-baseline-review.md", "reason": "Prior evidence and explicit non-AC5 claim boundary."}
+{"file": ".trellis/tasks/11-06-two-viewer-runtime-gate/prd.md", "reason": "Acceptance criteria to falsify or confirm."}
+{"file": ".trellis/tasks/11-06-two-viewer-runtime-gate/design.md", "reason": "Approved design used as the review ruler."}
+{"file": ".trellis/tasks/11-06-two-viewer-runtime-gate/implement.md", "reason": "Expected file ownership, test coverage and execution boundaries."}

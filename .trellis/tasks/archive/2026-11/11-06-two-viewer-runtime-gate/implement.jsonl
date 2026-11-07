@@ -1,0 +1,8 @@
+{"file": ".trellis/spec/guides/rulego-engineering.md", "reason": "Route ownership, capability design, and runtime evidence requirements for this task."}
+{"file": ".trellis/spec/guides/rulego-runtime-verification.md", "reason": "Defines the runtime evidence ladder and bounded seekable-media checks."}
+{"file": ".trellis/spec/guides/rulego-delivery-workflow.md", "reason": "Defines proportional delivery, goal-first delegation, and completion audit rules."}
+{"file": ".trellis/tasks/11-05-hls-friendly-concurrency/research/single-baseline-collector-notes.md", "reason": "Reviewed safety, sanitization, polling, and lifecycle behavior to preserve or reuse."}
+{"file": ".trellis/tasks/11-05-hls-friendly-concurrency/research/two-source-baseline-review.md", "reason": "Immediate prerequisite evidence and the exact claim boundary for this next gate."}
+{"file": ".trellis/tasks/11-06-two-viewer-runtime-gate/prd.md", "reason": "Requirements and acceptance criteria for the two-viewer run."}
+{"file": ".trellis/tasks/11-06-two-viewer-runtime-gate/design.md", "reason": "Locked technical design for the diagnostic collector and live gate."}
+{"file": ".trellis/tasks/11-06-two-viewer-runtime-gate/implement.md", "reason": "Ordered implementation, review, execution and evidence boundaries."}

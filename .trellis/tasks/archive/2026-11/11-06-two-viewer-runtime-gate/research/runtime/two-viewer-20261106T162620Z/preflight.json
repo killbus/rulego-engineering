@@ -1,0 +1,86 @@
+{
+  "capturedUtc": "2026-11-06T16:26:22.320818+00:00",
+  "status": "accepted",
+  "checks": {
+    "resourceOriginVersion": true,
+    "componentType": true,
+    "sharedNodeInstance": true,
+    "sharedNodeId": true,
+    "maxRetainedBytes": true,
+    "rootConfiguration": true,
+    "childTtlMs": true,
+    "parentTtlMs": true
+  },
+  "accepted": true,
+  "resourceOriginVersion": "0.2.1",
+  "resourceOriginPolicy": {
+    "maxRetainedBytes": 536870912.0,
+    "maxResourceBytes": 33554432.0,
+    "maxProductionMs": 300000.0,
+    "maxTtlMs": 86400000.0
+  },
+  "resourceOriginInstanceId": "resource-origin",
+  "chainPolicy": {
+    "nodeCount": 52,
+    "connectionCount": 69,
+    "acquire": [
+      {
+        "id": "parent-acquire-request",
+        "ttlMs": 21600000,
+        "productionTimeoutMs": 300000,
+        "maxBytes": 33554432
+      },
+      {
+        "id": "child-acquire-request",
+        "ttlMs": 120000,
+        "productionTimeoutMs": 300000,
+        "maxBytes": 33554432
+      }
+    ],
+    "resourceOriginRoots": [
+      {
+        "id": "parent-origin",
+        "root": "ref://resource-origin"
+      },
+      {
+        "id": "parent-lookup",
+        "root": "ref://resource-origin"
+      },
+      {
+        "id": "initial-resolve",
+        "root": "ref://resource-origin"
+      },
+      {
+        "id": "child-origin",
+        "root": "ref://resource-origin"
+      },
+      {
+        "id": "commit",
+        "root": "ref://resource-origin"
+      },
+      {
+        "id": "parent-missing",
+        "root": "ref://resource-origin"
+      },
+      {
+        "id": "production-fail",
+        "root": "ref://resource-origin"
+      }
+    ],
+    "rootConfiguration": {
+      "expected": "ref://resource-origin",
+      "allMatch": true
+    }
+  },
+  "chainSha256": "d03442a48e03dda2879849981bba6a4236d3b7d4e8e4db98e34a472e978746dc",
+  "componentsSha256": "181204d30be48f723380c5de70e724aabdf8733ca21591f0762f183a0d2caeaa",
+  "sharedNodesSha256": "899feced482c1cff41af0fc63cd7938a39c20f11bbfb9e90161a493913a1f5ac",
+  "knownInventory": null,
+  "diskHeadroom": null,
+  "baselineLabel": "not-certified-cold; no cache cleared",
+  "existingTraffic": {
+    "knownLocalMpvProcesses": null,
+    "knownLocalMpvProcessesState": "not_measured",
+    "otherHosts": "unknown"
+  }
+}

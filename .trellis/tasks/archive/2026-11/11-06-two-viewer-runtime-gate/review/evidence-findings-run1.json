@@ -1,0 +1,125 @@
+{
+  "verdict": "PASS",
+  "round": 1,
+  "role": "Evidence Reviewer",
+  "artifacts_checked": [
+    {
+      "path": ".trellis/tasks/11-06-two-viewer-runtime-gate/research/runtime/two-viewer-20261106T162620Z/preflight.json",
+      "sha256": "062A9080786D2AEEBEB417624C4A4C285319852D7D6E280C8981BD32016379F0"
+    },
+    {
+      "path": ".trellis/tasks/11-06-two-viewer-runtime-gate/research/runtime/two-viewer-20261106T162620Z/baseline.json",
+      "sha256": "CEA0271C92F74B5E97A6A69D9D83DBA780C23B40AC41CF328D673501369ACC74"
+    },
+    {
+      "path": ".trellis/tasks/11-06-two-viewer-runtime-gate/research/runtime/two-viewer-20261106T162620Z/lifecycle.jsonl",
+      "sha256": "063CD83F677EEA1A3A07B6E8FDEA6491C7F325CD385FBCCE0E4C10442F481BE3"
+    },
+    {
+      "path": ".trellis/tasks/11-06-two-viewer-runtime-gate/research/runtime/two-viewer-20261106T162620Z/consumer-events.jsonl",
+      "sha256": "3BF8C4F430ECFE3C1FBE0CF03D20259F991C6BC0F5E1EC31B421C27AB7FF7386"
+    },
+    {
+      "path": ".trellis/tasks/11-06-two-viewer-runtime-gate/research/runtime/two-viewer-20261106T162620Z/server-events.jsonl",
+      "sha256": "6E21083BD4B5461149E0827B7503678786EC4D2BD01FE47B8F92D5DCADB09CB3"
+    },
+    {
+      "path": ".trellis/tasks/11-06-two-viewer-runtime-gate/research/runtime/two-viewer-20261106T162620Z/polls.jsonl",
+      "sha256": "5851BFDB1DFFA6B6881132F7956920400259AA95454D52DB7A39AB1AED429C70"
+    },
+    {
+      "path": ".trellis/tasks/11-06-two-viewer-runtime-gate/research/runtime/two-viewer-20261106T162620Z/summary.json",
+      "sha256": "3A67DF7C2F1FD2C379F6D0A04F107E63556C63339676F4C60AB8F3CC71FCFF01"
+    }
+  ],
+  "recomputed": [
+    {
+      "claim": 1,
+      "text": "Scope is two_viewer_same_program_different_positions_not_AC5 and summary contains no AC5/pass-convertible field.",
+      "recomputed": "summary.json scope matches. Summary key set has no 'pass', 'ac5', or 'verdict' field. Literal substrings exist inside stable identifiers and scope ('not_AC5') and in the boolean key 'barrierPassed'; none are pass-convertible verdict fields. completionAloneIsConformance is false."
+    },
+    {
+      "claim": 2,
+      "text": "Preflight accepted, all 8 checks true, version 0.2.1, maxRetainedBytes 536870912, child TTL 120000, parent TTL 21600000, 7 ref://resource-origin roots, 52 nodes / 69 connections.",
+      "recomputed": "Reproduced exactly from preflight.json: status=accepted; all 8 checks true; resourceOriginVersion=0.2.1; maxRetainedBytes=536870912.0; child-acquire-request ttlMs=120000; parent-acquire-request ttlMs=21600000; 7 resourceOriginRoots each ref://resource-origin; nodeCount=52; connectionCount=69."
+    },
+    {
+      "claim": 3,
+      "text": "Exactly 2 owned players; spawn-return spread 1.81768798828125 s < 2 s; barrier passed.",
+      "recomputed": "Reproduced from lifecycle.jsonl/summary.launch: viewer-a start=0 pid=1296, viewer-b start=600 pid=45880. Spawn-return spread recomputed as 1.81768798828125 s (b returned 16:26:29.520489 minus a returned 16:26:27.702801). Request spread is 1.5498800 s. launch.barrierPassed=true. No forced stop."
+    },
+    {
+      "claim": 4,
+      "text": "viewer-a: exit 0, max position 359.976278 s from termStatus, relative progress 359.976278 s, 1080p, 0 captured error signals, no completed buffering interval.",
+      "recomputed": "summary.viewers.viewer-a matches. From consumer-events.jsonl, max progress with position < 600 is 359.976278, positionSource=termStatus, relativeSeconds=359.976278; 22038 progress events below 600. One video_output at 1920x1080. No viewer-a buffer_enter/buffer_end events can be isolated in the unlabeled stream; the only completed buffering interval is plausibly assigned to viewer-b. No http_error/segment_open_failed/playback_failure/player_error events exist in the flattened evidence."
+    },
+    {
+      "claim": 5,
+      "text": "viewer-b: exit 0, max position 959.975678 s (relative 359.975678 s), 1080p, 0 captured error signals, exactly one completed buffering interval of 5.393761 s.",
+      "recomputed": "Reproduced. consumer-events.jsonl has exactly one buffer_end with durationSeconds=5.393761 (pairedEnter=true, intervalStartElapsed=26.058, intervalPhase=midplay), one buffer_enter, 10 buffer_still, and max progress at position 959.975678 / relative 359.975678. The interval is attributable to viewer-b on index/segment evidence: viewer-b segment opens stall after 117 (15.685 s) until 118 (29.571 s), while viewer-a continues opening 10-13 during the same window; viewer-b position was ~610.14 s at interval start and ~611.03 s after end, i.e. early playback (~10-11 s of viewer-b progress), not startup-before-first-advance (first viewer-b advance is 16.127 s elapsed)."
+    },
+    {
+      "claim": 6,
+      "text": "Server telemetry: 3136 captured events, 0 failure signals in client clock window, 0 fetch failures, 0 invalid JSONL rows, 221 ready/commit events, ledgerComplete false, retainedBytes null, inventory unknown_not_collected.",
+      "recomputed": "Reproduced exactly. server-events.jsonl has 3136 valid rows, 0 failureSignal, 0 fetch failures in 7861 poll rows, 0 invalid JSONL rows in server/consumer/polls, readyCommitEvents recomputed as 221, server.ledgerComplete=false, retainedBytes=null, inventory='unknown_not_collected'. Poll coverage flags empty; all 22 nodes reached final."
+    },
+    {
+      "claim": 7,
+      "text": "collectionStatus completed, stopReason player_exited, 2 players spawned, no cleanup errors, raw player log removed.",
+      "recomputed": "Reproduced from summary.collectionStatus and lifecycle: status=completed, stopReason=player_exited, playersSpawned=2, cleanupErrors=[], rawPlayerLog=temporary_only_removed. Run dir contains no raw per-viewer mpv log file."
+    },
+    {
+      "claim": 8,
+      "text": "Both viewers opened disjoint segment regions apart from index 0 and 1.",
+      "recomputed": "Reproduced. crossViewer.viewerObservedOpenIndices.viewer-a is exactly 0..108 (109 unique), viewer-b is [0,1,114..224] (113 unique). Shared indices are only 0 and 1. caveat: 'opened' means mpv attempted HTTP open, not successful delivery proof."
+    }
+  ],
+  "discrepancies": [],
+  "sanitization": {
+    "findings": [],
+    "searched": [
+      "Authorization/Basic headers",
+      "http:// URLs",
+      "ffmpegSecret",
+      "RULEGO_",
+      "password/secret/token/user words in raw evidence",
+      "raw chain/component configuration bodies",
+      "raw per-viewer mpv log files"
+    ],
+    "result": "No credentials, Authorization/Basic header values, http:// URLs, ffmpegSecret, RULEGO_ values, or raw chain/component config bodies found in the artifacts. Command records contain placeholders <media-url> and --log-file=<temporary-per-viewer-log>. No raw per-viewer mpv log exists in the run directory.",
+    "local_process_check": "Get-Process mpv returned NONE; no leftover mpv.exe process was observed."
+  },
+  "cross_validation": {
+    "single_viewer_A": "consistent. Earlier single-baseline-A (3UJp1qfvL90) had exit 0, 1080p, max 359.976278, no captured errors/no buffering, ac5=not_evaluated.",
+    "single_viewer_B": "consistent. Earlier single-baseline-B (J1z_eXpVD1w) had exit 0, 1080p, max 359.92, no captured player errors; server evidence included one canceled signal and fetch failures, which this two-viewer run did not reproduce, but nothing contradicts it.",
+    "three_concurrent_storage_limit": "not contradicted and not revalidated. Earlier same-program-different-positions evidence captured four commit storage_limit failures and corresponding player HTTP 507s. This run captured zero server failure signals and both players completed, but it is a two-viewer disjoint-region run with an explicitly not-AC5 scope, unknown retained-byte/inventory state, and a non-complete ledger. It does not disprove the three-viewer storage_limit finding and should not be used to claim three-viewer capacity.",
+    "scope_limit": "Only single/two-viewer baselines are cross-validated; no three-program or three-viewer acceptance claim is supported."
+  },
+  "residual_unknowns": [
+    "retainedBytes is null and completeLedger false; actual aggregate retained bytes are unknown.",
+    "Inventory was not collected (unknown_not_collected); actual resource-origin inventory and expiry state are unknown.",
+    "Server clock offset is unknown; event client-window attribution is approximate.",
+    "Other-host traffic was unknown and not excluded; server telemetry may include other clients.",
+    "Instrumentation (22-node debug tail polling at 22 requests/second) may affect playback timing.",
+    "Spawn-return spread is not proof of simultaneous playback start; exact OS scheduler interleaving is unobserved.",
+    "Flattened consumer-events.jsonl has no viewer label; per-viewer counts were re-derived from position/index/order and the separate per-player summary computation, not from a labeled stream.",
+    "No raw mpv log was kept, so parser-level buffering/HTTP parsing cannot be re-audited independently.",
+    "Final-tail loss between the last server poll row and closure is not fully excluded; polls show no long gaps, but ledgerComplete=false.",
+    "One completed buffer interval is captured for viewer-b, but its server-side cause is not visible (no failure signal, no segment fetch completion ledger).",
+    "http_open indices show attempts, not successful segment fetches.",
+    "Whether a third concurrent viewer would trigger storage_limit/507 is not answered by this run.",
+    "viewer-a's absent buffering interval proves no captured Enter/End buffer interval in its verbose log; it does not prove zero stalls, zero midplay pauses without buffering markers, or zero concurrent server errors unassigned to a viewer."
+  ],
+  "scope_honesty": {
+    "summary_has_no_pass_or_ac5_verdict_field": true,
+    "completionAloneIsConformance": false,
+    "serverEventsAssignedToViewer": false,
+    "hidden_per_viewer_server_assignment": false,
+    "detected_literal_substrings": [
+      "scope contains not_AC5 (AC5 as part of the not-AC5 scope name)",
+      "ac5 appears inside UUID fragments in stableIdentifiers, not as a verdict field",
+      "Pass appears as a substring in barrierPassed, not as a verdict field"
+    ],
+    "verdict_note": "PASS means this run can be recorded as evidence for the stated not-AC5 scope, not that AC5/three-viewer capacity is proven."
+  }
+}

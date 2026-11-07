@@ -1,0 +1,86 @@
+{
+  "round": 2,
+  "role": "Implementer",
+  "parent_verified_endpoint_mapping": {
+    "catalog": {
+      "path": "/api/v1/components",
+      "accepted_envelope": "top-level nodes[] of component form definitions",
+      "source_of": "resourceOrigin type and version only"
+    },
+    "shared_nodes": {
+      "path": "/api/v1/shared-nodes?page=1&size=100",
+      "accepted_envelope": "top-level items[] with page, size and total",
+      "source_of": "unique resourceOrigin instance id and configuration policy"
+    },
+    "fail_closed": {
+      "shared_nodes": "requires exactly one resourceOrigin item and id resource-origin",
+      "catalog": "requires the resourceOrigin form-definition version"
+    },
+    "raw_bodies_or_secrets_persisted": false
+  },
+  "changed_files": [
+    ".trellis/tasks/11-06-two-viewer-runtime-gate/research/run-two-viewer.py",
+    ".trellis/tasks/11-06-two-viewer-runtime-gate/research/test_two_viewer.py",
+    ".trellis/tasks/11-06-two-viewer-runtime-gate/research/two-viewer-collector-notes.md",
+    ".trellis/tasks/11-06-two-viewer-runtime-gate/review/responses.json"
+  ],
+  "unmodified_planning_artifacts": true,
+  "changed_summary": {
+    "run-two-viewer.py": [
+      "preflight now fetches the verified shared-nodes list before chain read-back",
+      "parse_shared_node_policy accepts only the items[] envelope, one resourceOrigin entry and id resource-origin",
+      "parse_component_policy accepts the components nodes[] catalog for version/type",
+      "instance configuration now supplies maxRetainedBytes and the other sanitized resourceOrigin policy values",
+      "preflight evidence adds resourceOriginInstanceId and sharedNodesSha256",
+      "existingTraffic.knownLocalMpvProcesses is null with state not_measured"
+    ],
+    "test_two_viewer.py": [
+      "real shared-nodes items and components nodes envelopes accepted",
+      "old catalog summary shape still fails closed",
+      "zero/multiple resourceOrigin instances and wrong instance id abort",
+      "run lifecycle mocks supply the shared-nodes response",
+      "healthy preflight evidence checks assert instance id, policy, hash and not-measured traffic fields"
+    ],
+    "two-viewer-collector-notes.md": [
+      "documents both endpoint mappings and sanitized evidence fields",
+      "updates test count and source hashes"
+    ]
+  },
+  "findings": {
+    "code-review-1": "closed by requiring exactly one resourceOrigin shared-node instance and resource-origin id",
+    "code-review-2": "closed with knownLocalMpvProcesses=null and knownLocalMpvProcessesState=not_measured",
+    "code-review-3": "unchanged; documented non-blocking and out of scope",
+    "code-review-4": "unchanged; documented non-blocking and out of scope",
+    "code-review-5": "closed for the now-verified catalog and shared-node envelopes"
+  },
+  "verification": {
+    "test_command": "python -B -W error::ResourceWarning -m unittest discover -s .trellis/tasks/11-06-two-viewer-runtime-gate/research -p test_two_viewer.py -v",
+    "test_result": "39 tests, OK",
+    "test_count": 39,
+    "syntax_command": "python -B -c \"from pathlib import Path; p=Path('.trellis/tasks/11-06-two-viewer-runtime-gate/research/run-two-viewer.py'); compile(p.read_text(), str(p), 'exec'); q=Path('.trellis/tasks/11-06-two-viewer-runtime-gate/research/test_two_viewer.py'); compile(q.read_text(), str(q), 'exec'); print('compile ok both')\"",
+    "syntax_result": "compile ok both",
+    "resourcewarning_as_error": true,
+    "bytecode_written": false,
+    "live_api_calls": false,
+    "offline_only": true
+  },
+  "hashes": {
+    "design_md": "28742D5547C83FEE6C3007891B6910B46454451E626C5837909F345E0BBB03B2",
+    "run_two_viewer_py": "4982CB29C71D81F16768FC9F7857A7E9803F9C937D9AF00DD902A6C863BDE369",
+    "test_two_viewer_py": "7D66B42DD37486A560E870EE1C9DC00A86556A6B8A98E29168DDD2099DAD0E01",
+    "two_viewer_collector_notes_md": "53B4AAD242642FAFFE3E7412D98C387DCC591EF0E3B1524FEE8C4FB735FF3B53",
+    "frozen_run_single_baseline_py": "BA6C23FBE69FB012211F0C31F615837738C3AD3F66E8B6B9F6B19A9E13A45A26",
+    "frozen_test_single_baseline_py": "E8943DC330C2F2B8B2DF6363B2D82A3550C56FB76A90ADBBE5BAD4E83339206A"
+  },
+  "unmodified_artifact_hashes": {
+    "prd_md": "D6D03293BDE4260B6B34077FF2D18334CE6490D8800CD78CEB3B19F512DE0647",
+    "implement_md": "663D73D46624D9688CD4F01483859DE55821E5A1A681752F2CE36686B31D42F3",
+    "approval_md": "65F44DB6D938E05BA114F2116EEA6AAA0884599D09B7B89127A2FBC7E0CC96FC"
+  },
+  "residual_unknowns": [
+    "The parent-verified shared-node statuses endpoint is not fetched by preflight; status remains observable only during the shared telemetry run.",
+    "Real mpv stdout/log flushing, ordering, and Windows taskkill tree containment remain runtime behaviors not proven offline.",
+    "Server clock offset, cross-client traffic, other-host inventory, retainedBytes, and instrumentation perturbation remain unknown until the independently reviewed live run."
+  ],
+  "implementation_status": "complete_for_round_2_review"
+}

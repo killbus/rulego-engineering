@@ -1,0 +1,67 @@
+{
+  "verdict": "PASS",
+  "done": true,
+  "round": 2,
+  "role": "Code Reviewer",
+  "design_sha256": "28742D5547C83FEE6C3007891B6910B46454451E626C5837909F345E0BBB03B2",
+  "checks_run": [
+    "SHA256 recomputed for all frozen artifacts: run-two-viewer.py=4982CB29C71D81F16768FC9F7857A7E9803F9C937D9AF00DD902A6C863BDE369, test_two_viewer.py=7D66B42DD37486A560E870EE1C9DC00A86556A6B8A98E29168DDD2099DAD0E01, two-viewer-collector-notes.md=53B4AAD242642FAFFE3E7412D98C387DCC591EF0E3B1524FEE8C4FB735FF3B53, responses.json=D4664222E4DB95D9B040F7859873656ED1D4674E3BF93E4B9B6FACD73C2940EA, design.md=28742D5547C83FEE6C3007891B6910B46454451E626C5837909F345E0BBB03B2",
+    "Planning artifacts recomputed unchanged: prd.md=D6D03293BDE4260B6B34077FF2D18334CE6490D8800CD78CEB3B19F512DE0647, implement.md=663D73D46624D9688CD4F01483859DE55821E5A1A681752F2CE36686B31D42F3, approval.md=65F44DB6D938E05BA114F2116EEA6AAA0884599D09B7B89127A2FBC7E0CC96FC",
+    "Frozen 11-05 harness unchanged: run-single-baseline.py=BA6C23FBE69FB012211F0C31F615837738C3AD3F66E8B6B9F6B19A9E13A45A26, test_single_baseline.py=E8943DC330C2F2B8B2DF6363B2D82A3550C56FB76A90ADBBE5BAD4E83339206A",
+    "python -B -W error::ResourceWarning -m unittest discover -s .trellis/tasks/11-06-two-viewer-runtime-gate/research -p test_two_viewer.py -v: 39 tests, OK, ResourceWarning as error",
+    "python -B -c compile() syntax check for run-two-viewer.py and test_two_viewer.py: compile ok both",
+    "No __pycache__ directory exists under the 11-06 task; bytecode disabled for listed commands",
+    "Offline replay of the parent-verified envelopes through parser functions: maxRetainedBytes=536870912 selected from sharedNodes configuration, resourceOrigin version=0.2.1 from components catalog nodes[], chain policy from deployed-chain-before-latest.json patched in-memory to the current child TTL yields all 8 gating checks true and accepted=true; no live API/network call was made"
+  ],
+  "criteria": {
+    "code-review-5_endpoint_mapping": "met - parse_component_policy handles top-level nodes[] form catalog entries without configuration and parse_shared_node_policy requires exactly one resourceOrigin item with sanitized id resource-origin and reads maxRetainedBytes from its configuration. Offline replay of the real-shape envelopes (components {nodes:[{type,version}]}, shared-nodes {items:[resource-origin,...]}, chain with root refs and TTLs) yielded accepted=true. The old components-before-resource-origin summary shape (resourceOriginVersion, configuration, no nodes array) still yields type=None/version=None and aborts preflight.",
+    "component_catalog_safe": "met - the live envelope's nodes[] contains exactly one resourceOrigin entry with version 0.2.1 and no configuration; the parser selects that entry and ignores the shared instance policy for the catalog. The retained components[0] fallback does not enable false acceptance under the confirmed real envelope because the shared instance must be unique, id resource-origin, and have the exact 536870912 maxRetainedBytes. A zero-match unknown envelope yields None/false.",
+    "shared_node_policy_fail_closed": "met - missing items returns invalid_shared_nodes_envelope; zero or multiple resourceOrigin matches return ambiguous_shared_nodes_envelope; wrong sanitized id returns ambiguous; a mis-shaped envelope returns invalid both returning None and never accepting.",
+    "component_policy_fail_closed_adversarial": "partially met/non-blocking - wrong version, multiple resourceOrigin catalog entries, or a non-resourceOrigin fallback still cannot produce a false accepted preflight because the eight checks must pass together and the shared instance plus exact maxRetainedBytes gate the only source of maxRetainedBytes. No adversarial body was found in the provided fixtures that makes accepted=true without the exact gated values.",
+    "ac6_covenant": "met - constants remain RESOURCE_ORIGIN_VERSION 0.2.1, CHILD_TTL_MS 120000, PARENT_TTL_MS 21600000, MAX_RETAINED_BYTES 536870912; preflight checks all four before any player Popen and returns exit 2 with aborted evidence on mismatch (or fetch failure).",
+    "evidence_sanitization": "met - raw API bodies are hashed only (componentsSha256, sharedNodesSha256, chainSha256); preflight.json serializes sanitized instance id, selected policy numbers, hashes and chain policy; telemetry sanitize_event never copies raw error bodies, URLs, credentials or arbitrary string payloads; knownLocalMpvProcesses is null with state not_measured (no measured-zero claim); otherHosts unknown.",
+    "scope_no_ac5_overclaim": "met - summary top-level keys are exactly scope/preflight/launch/viewers/server/crossViewer/limits/collectionStatus; scope is two_viewer_same_program_different_positions_not_AC5; no top-level pass or ac5 field; tests assert this and coverage does not claim a computed requestedIndex for viewer-b.",
+    "single_viewer_and_planning_artifacts_preserved": "met - frozen 11-05 Python hashes unchanged; prd/implement/approval hashes unchanged; design.md hash matches approval.md; the 11-05 research/runtime and __pycache__ are not tracked as part of this task and were not modified by this review."
+  },
+  "blocking_findings": [],
+  "non_blocking_findings": [
+    {
+      "id": "code-review-2-r2",
+      "severity": "non_blocking",
+      "summary": "knownLocalMpvProcesses is now explicitly null plus not_measured, satisfying the round-1 ambiguity. Residual risk is that the field name in preflight.json may still be read without the adjacent state field; the state makes the intended meaning unambiguous.",
+      "evidence": "preflight.json record has knownLocalMpvProcesses: null and knownLocalMpvProcessesState: not_measured; no local mpv enumeration exists in the collector."
+    },
+    {
+      "id": "code-review-3-r2",
+      "severity": "non_blocking",
+      "summary": "viewer-b requestedIndex is still the explicitly non-numeric placeholder 'derived from runtime segment timeline' from round-1; unchanged and out-of-scope as told. It is not silently presented as a measured index and observed open indices are reported separately.",
+      "evidence": "cross_viewer_summary() emits requestedIndex string for viewer-b and viewerObservedOpenIndices from player evidence."
+    },
+    {
+      "id": "code-review-4-r2",
+      "severity": "non_blocking",
+      "summary": "readback_policy records nodeCount and connectionCount but does not hard-gate 52/69; chainSha256 preserves drift detectability. Unchanged and non-blocking per the task brief.",
+      "evidence": "preflight checks do not compare nodeCount/connectionCount; chainSha256 is stored in preflight.json."
+    },
+    {
+      "id": "catalog-multiple-match-latent",
+      "severity": "non_blocking",
+      "summary": "parse_component_policy still selects the first type==resourceOrigin component without requiring the catalog to contain exactly one resourceOrigin definition and without binding that definition to the shared resource-origin instance. Given the confirmed live single-entry catalog and the independent unique-instance/maxRetainedBytes gates, this cannot create a false accepted preflight today.",
+      "evidence": "parse_component_policy returns next(value for value in components if value.get('type')=='resourceOrigin'); no count/identity binding."
+    },
+    {
+      "id": "exit-return-code-not-evidence",
+      "severity": "non_blocking",
+      "summary": "exit code 0 on healthy player_exited is not converted into a conformance gate; the narrower acceptance is left to the independent evidence review, and tests do not assert a conformance field.",
+      "evidence": "run() returns 0 when stop_reason == player_exited regardless of captured failures; summary/collectionStatus only describe collection status."
+    }
+  ],
+  "residual_unknowns": [
+    "The archived components-before-resource-origin.json and components-before-summary.json are older/partial shapes, not the exact 119-entry live nodes[] catalog body. The exact byte-level live envelope was not persisted by design; parser acceptance for the verified shape was judged offline from the parent-provided envelope facts and equivalent synthetic fixtures.",
+    "Real mpv stdout/log flushing, final-line ordering, Windows taskkill /T tree containment, and direct-child fallback remain runtime behaviors only mocked by the offline suite.",
+    "Server/client clock offset, cross-client traffic, other-host inventory, actual retainedBytes, and instrumentation perturbation remain unknown until the independently reviewed bounded live two-viewer run.",
+    "Final-tail capture can miss rows racing helper shutdown; polls.jsonl flags and collectionStatus make this an explicit incomplete dimension rather than evidence of absence.",
+    "A 360-second media gate assumes approximately 1x playback rate; a slower viewer can fail overlap before the 359-second progress floor and is explicitly documented in limits."
+  ],
+  "scope_honesty": "This review approves the frozen task-local two-viewer diagnostic harness and its offline suite for the authorized single live two-viewer gate. It does not approve a third viewer, same-position reuse, different programs, production edits, TTL/budget/quality changes, or AC5 closure. Live execution must still be run by the parent session using the reviewed command shape and independently reviewed before any AC1-AC7 verdict is issued."
+}
