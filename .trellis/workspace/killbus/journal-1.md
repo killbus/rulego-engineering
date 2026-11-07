@@ -62,3 +62,26 @@ Closed task 10-20: published and read back RO v0.2.0 / FF v0.5.2 / IM v0.3.1 plu
 ### Status
 
 [OK] **Completed**
+
+
+## Session 3: Two-viewer runtime gate and terminal commit failure merge
+
+**Date**: 2026-11-07
+**Task**: Two-viewer runtime gate and terminal commit failure merge
+**Branch**: `main`
+
+### Summary
+
+Fixed the two-viewer preflight endpoint mapping, ran the approved live gate (3UJp1qfvL90 at 0 and 600, 360 s each, 1080p, zero captured error signals), promoted read-back and terminal-resolution practice into the guides, merged be72145 into rulego-resource-origin main, and archived the child task.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `788b834` | (see git log) |
+| `374e7b2` | (see git log) |
+| `be72145` | `rulego-resource-origin` merged to main (see sibling repo log) |
+
+### Status
+
+[OK] **Completed**
