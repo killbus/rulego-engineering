@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "workflow": "resin.subscription-url.update",
+  "rule_id": "example-rule-1",
+  "rule_name": "resin-subscription-url-update-fq521",
+  "alert_id": "example-alert-1",
+  "timestamp": "2026-11-10T02:10:49+08:00",
+  "payload": {
+    "subscription_id": "12345678-1234-4234-8234-123456789abc",
+    "sender_user_id": "7131987336",
+    "message_content": "今日订阅地址：https://subscriptions.example.com/fq521?token=example-token\n请使用最新链接。",
+    "sent_at": "2026-11-10T02:10:00+08:00"
+  }
+}

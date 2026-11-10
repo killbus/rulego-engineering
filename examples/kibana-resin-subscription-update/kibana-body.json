@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "workflow": "resin.subscription-url.update",
+  "rule_id": "{{rule.id}}",
+  "rule_name": "{{rule.name}}",
+  "alert_id": "{{alert.id}}",
+  "timestamp": "{{date}}",
+  "payload": {
+    "subscription_id": "<替换为 pub-t.me/fq521 的实际 UUID>",
+    "sender_user_id": "{{context.hits.0._source.sender_user_id}}",
+    "message_content": "{{context.hits.0._source.message_content}}",
+    "sent_at": "{{context.hits.0._source.sent_at}}"
+  }
+}

@@ -1,8 +1,7 @@
 name: CI
 
 on:
-  push:
-  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -37,4 +36,32 @@ jobs:
         run: go test ./...
       - name: go test -race
         working-directory: examples/budva-to-es
+        run: go test -race ./...
+
+  kibana-resin-subscription-update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify generated rule chains
+        working-directory: examples/kibana-resin-subscription-update
+        run: |
+          node build.mjs
+          git diff --exit-code -- chain.json resin-subscription-update.json
+      - name: gofmt
+        working-directory: examples/kibana-resin-subscription-update
+        run: test -z "$(gofmt -l .)"
+      - name: go vet
+        working-directory: examples/kibana-resin-subscription-update
+        run: go vet ./...
+      - name: go test
+        working-directory: examples/kibana-resin-subscription-update
+        run: go test ./...
+      - name: go test -race
+        working-directory: examples/kibana-resin-subscription-update
         run: go test -race ./...

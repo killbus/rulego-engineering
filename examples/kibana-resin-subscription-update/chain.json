@@ -1,0 +1,191 @@
+{
+  "ruleChain": {
+    "id": "4wuqBxeSn9uV",
+    "name": "kibana-webhook-ingress",
+    "debugMode": false,
+    "root": true,
+    "disabled": false,
+    "additionalInfo": {
+      "description": "Kibana webhook ingress: validate the public envelope and route by workflow. resin.subscription-url.update extracts a URL and updates Resin; unknown workflows are rejected.",
+      "layoutX": "280",
+      "layoutY": "280",
+      "noDefaultInput": false,
+      "runLogMode": "off"
+    }
+  },
+  "metadata": {
+    "firstNodeIndex": 0,
+    "endpoints": [
+      {
+        "id": "node_2",
+        "type": "endpoint/http",
+        "name": "HTTP",
+        "debugMode": false,
+        "configuration": {
+          "allowCors": false,
+          "disableKeepalive": false,
+          "idleTimeout": 60,
+          "readTimeout": 10,
+          "server": "ref://:9090",
+          "writeTimeout": 30
+        },
+        "additionalInfo": {
+          "layoutX": 281,
+          "layoutY": 211
+        },
+        "routers": [
+          {
+            "id": "AU2yIaXbBxXo5xwxXZVoh",
+            "params": [
+              "POST"
+            ],
+            "from": {
+              "path": "/webhooks/kibana",
+              "configuration": null,
+              "processors": []
+            },
+            "to": {
+              "path": "4wuqBxeSn9uV:node_validate",
+              "configuration": null,
+              "wait": true,
+              "processors": [
+                "responseToBody"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "id": "node_validate",
+        "type": "jsTransform",
+        "name": "Validate webhook envelope",
+        "debugMode": false,
+        "additionalInfo": {
+          "layoutX": 500,
+          "layoutY": 254
+        },
+        "configuration": {
+          "jsScript": "// Public webhook envelope only. Workflow selection belongs to the switch node.\nvar envelope = typeof msg === 'string' ? JSON.parse(msg) : msg;\nif (!envelope || typeof envelope !== 'object' || Array.isArray(envelope)) {\n  throw new Error('kibana-webhook-ingress: expected a webhook object');\n}\nif (envelope.schema_version !== 1) {\n  throw new Error('kibana-webhook-ingress: schema_version must be 1');\n}\nif (!envelope.payload || typeof envelope.payload !== 'object' || Array.isArray(envelope.payload)) {\n  throw new Error('kibana-webhook-ingress: payload must be an object');\n}\n// Keep optional source trace data when downstream nodes replace msg.\n// Do not copy the payload or arbitrary envelope fields into metadata.\nvar traceFields = ['rule_id', 'rule_name', 'alert_id', 'timestamp'];\nfor (var i = 0; i < traceFields.length; i++) {\n  var field = traceFields[i];\n  var value = envelope[field];\n  if (typeof value === 'string' && value.trim()) {\n    metadata['kibana_' + field] = value;\n  }\n}\nreturn { msg: envelope, metadata: metadata, msgType: msgType, dataType: 'JSON' };\n"
+        }
+      },
+      {
+        "id": "node_route",
+        "type": "switch",
+        "name": "Route by workflow",
+        "debugMode": false,
+        "additionalInfo": {
+          "layoutX": 800,
+          "layoutY": 254
+        },
+        "configuration": {
+          "cases": [
+            {
+              "case": "msg.workflow == \"resin.subscription-url.update\"",
+              "then": "resin.subscription-url.update"
+            }
+          ]
+        }
+      },
+      {
+        "id": "node_5",
+        "type": "jsTransform",
+        "name": "Extract Resin subscription URL",
+        "debugMode": false,
+        "additionalInfo": {
+          "layoutX": 1100,
+          "layoutY": 180
+        },
+        "configuration": {
+          "jsScript": "// Business mapping only: extract the first HTTP(S) subscription URL in text order.\n// The next jsFilter drops messages without a URL before the adapter is invoked.\n// Input is the validated envelope, selected by Route by workflow.\nvar payload = msg.payload;\nvar text = typeof payload.message_content === 'string' ? payload.message_content : '';\nvar candidates = text.match(/https?:\\/\\/[^\\s<>\"'`，。；！？、【】「」『』（）]+/gi) || [];\nvar url = '';\nfor (var i = 0; i < candidates.length; i++) {\n  var candidate = candidates[i];\n  // Remove prose punctuation and unmatched closing brackets (e.g. Markdown links),\n  // while preserving balanced parentheses in a URL path and IPv6 host brackets.\n  var previous;\n  do {\n    previous = candidate;\n    candidate = candidate.replace(/[.,;!]+$/, '');\n    var pairs = [['(', ')'], ['[', ']'], ['{', '}']];\n    for (var j = 0; j < pairs.length; j++) {\n      var open = pairs[j][0];\n      var close = pairs[j][1];\n      if (candidate.slice(-1) === close &&\n          candidate.split(close).length > candidate.split(open).length) {\n        candidate = candidate.slice(0, -1);\n      }\n    }\n  } while (candidate !== previous);\n  if (/^https?:\\/\\/[^\\/?#]+(?:[\\/?#]|$)/i.test(candidate)) {\n    url = candidate.replace(/^https?:/i, function (scheme) { return scheme.toLowerCase(); });\n    break;\n  }\n}\n\nreturn {\n  msg: {\n    id: payload.subscription_id,\n    body: { url: url }\n  },\n  metadata: metadata,\n  msgType: msgType,\n  dataType: 'JSON'\n};\n"
+        }
+      },
+      {
+        "id": "node_has_url",
+        "type": "jsFilter",
+        "name": "Has HTTP(S) URL",
+        "debugMode": false,
+        "additionalInfo": {
+          "layoutX": 1400,
+          "layoutY": 180
+        },
+        "configuration": {
+          "jsScript": "return typeof msg.body.url === 'string' && msg.body.url.length > 0;"
+        }
+      },
+      {
+        "id": "node_resin_update",
+        "type": "resinSubscriptionUpdate",
+        "name": "Resin subscription update",
+        "debugMode": false,
+        "additionalInfo": {
+          "layoutX": 1700,
+          "layoutY": 100
+        },
+        "configuration": {
+          "baseUrl": "${global.resin_base_url}",
+          "adminToken": "${global.resin_admin_token}"
+        }
+      },
+      {
+        "id": "node_ignored",
+        "type": "jsTransform",
+        "name": "Ignore without update",
+        "debugMode": false,
+        "additionalInfo": {
+          "layoutX": 1700,
+          "layoutY": 300
+        },
+        "configuration": {
+          "jsScript": "return {msg: {status: 'ignored', reason: 'no_http_url'}, metadata: metadata, msgType: msgType, dataType: 'JSON'};"
+        }
+      },
+      {
+        "id": "node_unsupported",
+        "type": "jsTransform",
+        "name": "Reject unsupported workflow",
+        "debugMode": false,
+        "additionalInfo": {
+          "layoutX": 1100,
+          "layoutY": 450
+        },
+        "configuration": {
+          "jsScript": "throw new Error('kibana-webhook-ingress: unsupported workflow');"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "fromId": "node_validate",
+        "toId": "node_route",
+        "type": "Success"
+      },
+      {
+        "fromId": "node_route",
+        "toId": "node_5",
+        "type": "resin.subscription-url.update"
+      },
+      {
+        "fromId": "node_route",
+        "toId": "node_unsupported",
+        "type": "Default"
+      },
+      {
+        "fromId": "node_5",
+        "toId": "node_has_url",
+        "type": "Success"
+      },
+      {
+        "fromId": "node_has_url",
+        "toId": "node_resin_update",
+        "type": "True"
+      },
+      {
+        "fromId": "node_has_url",
+        "toId": "node_ignored",
+        "type": "False"
+      }
+    ]
+  }
+}

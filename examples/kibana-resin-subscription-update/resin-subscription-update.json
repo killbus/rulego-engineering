@@ -1,0 +1,87 @@
+{
+  "ruleChain": {
+    "id": "resinSubscriptionUpdate",
+    "name": "Resin subscription update",
+    "root": false,
+    "debugMode": false,
+    "disabled": false,
+    "additionalInfo": {
+      "category": "external",
+      "icon": "custom-node",
+      "version": "1.0.0",
+      "description": "Input: {id: UUID, body: PATCH object}. Output: Resin subscription response. Success means the PATCH was accepted; subscription parsing/fetching is asynchronous.",
+      "relationTypes": [
+        "Success",
+        "Failure"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "baseUrl": {
+            "type": "string",
+            "title": "Resin base URL",
+            "description": "Service origin, optionally with a reverse-proxy path prefix.",
+            "default": "${global.resin_base_url}"
+          },
+          "adminToken": {
+            "type": "string",
+            "title": "Resin admin token",
+            "description": "Use a deployment property reference; do not embed the token in the DSL.",
+            "default": "${global.resin_admin_token}"
+          }
+        },
+        "required": [
+          "baseUrl",
+          "adminToken"
+        ]
+      }
+    }
+  },
+  "metadata": {
+    "firstNodeIndex": 0,
+    "nodes": [
+      {
+        "id": "prepare",
+        "type": "jsTransform",
+        "name": "Validate and prepare PATCH",
+        "debugMode": false,
+        "additionalInfo": {
+          "layoutX": 420,
+          "layoutY": 200
+        },
+        "configuration": {
+          "jsScript": "// Generic Resin adapter: no alert, channel name, or content extraction policy.\nvar request = typeof msg === 'string' ? JSON.parse(msg) : msg;\nif (!request || typeof request !== 'object' || Array.isArray(request)) {\n  throw new Error('resinSubscriptionUpdate: expected {id, body}');\n}\nif (typeof request.id !== 'string' ||\n    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(request.id)) {\n  throw new Error('resinSubscriptionUpdate: id must be a canonical UUID');\n}\nif (!request.body || typeof request.body !== 'object' ||\n    Array.isArray(request.body) || Object.keys(request.body).length === 0) {\n  throw new Error('resinSubscriptionUpdate: body must be a non-empty JSON object');\n}\n\nvar baseUrl = vars.baseUrl;\nif (typeof baseUrl !== 'string' || baseUrl.indexOf('$' + '{') !== -1 ||\n    !/^https?:\\/\\/[^\\s\\/?#@]+(?:\\/[^\\s?#]*)?$/.test(baseUrl)) {\n  throw new Error('resinSubscriptionUpdate: configure baseUrl as an HTTP(S) service URL');\n}\nif (typeof vars.adminToken !== 'string' || !vars.adminToken.trim() ||\n    vars.adminToken.indexOf('$' + '{') !== -1 || /[\\r\\n]/.test(vars.adminToken)) {\n  throw new Error('resinSubscriptionUpdate: configure adminToken');\n}\n\nmetadata.resin_subscription_id = request.id.toLowerCase();\nmetadata.resin_request_url = baseUrl.replace(/\\/+$/, '') +\n  '/api/v1/subscriptions/' + metadata.resin_subscription_id;\n\n// restApiCall sends msg as JSON. Never concatenate content into a JSON template.\n// Resin owns field validation, source_type compatibility, and update side effects.\nreturn {\n  msg: request.body,\n  metadata: metadata,\n  msgType: msgType,\n  dataType: 'JSON'\n};\n"
+        }
+      },
+      {
+        "id": "patch",
+        "type": "restApiCall",
+        "name": "PATCH subscription",
+        "debugMode": false,
+        "additionalInfo": {
+          "layoutX": 720,
+          "layoutY": 200
+        },
+        "configuration": {
+          "restEndpointUrlPattern": "${metadata.resin_request_url}",
+          "requestMethod": "PATCH",
+          "withoutRequestBody": false,
+          "headers": {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": "Bearer ${vars.adminToken}"
+          },
+          "readTimeoutMs": 10000,
+          "insecureSkipVerify": false
+        }
+      }
+    ],
+    "connections": [
+      {
+        "fromId": "prepare",
+        "toId": "patch",
+        "type": "Success"
+      }
+    ]
+  }
+}
